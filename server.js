@@ -30,8 +30,11 @@ app.post('/api/register', async (req, res) => {
     try {
         const { username, password, authCode } = req.body;
         
+        // 动态获取最新的授权码，确保环境变量修改后立即生效
+        const currentAuthCode = process.env.REG_AUTH_CODE || "666";
+        
         // 验证授权码
-        if (authCode !== AUTH_CODE) {
+        if (authCode !== currentAuthCode) {
             return res.status(400).json({ message: "无效的授权码" });
         }
         
