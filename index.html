@@ -1058,6 +1058,12 @@
         }
         checkAuth();
 
+        function logout() {
+            localStorage.removeItem('isAdminLoggedIn');
+            localStorage.removeItem('currentAdmin');
+            window.location.href = 'admin_auth.html';
+        }
+
         const i18n = {
             zh: {
                 title: "游戏福利预约",
