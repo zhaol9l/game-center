@@ -1,0 +1,1441 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>游戏库搜索菜单</title>
+    <style>
+        /* 浅色模式适配 */
+        body.light-mode {
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%) !important;
+            color: #333 !important;
+        }
+        body.light-mode .game-navbar {
+            background: rgba(255, 255, 255, 0.95);
+        }
+        body.light-mode .nav-link { color: #555; }
+        body.light-mode .form-group { background: white; border-color: rgba(0,0,0,0.1); }
+        body.light-mode .sidebar { background: rgba(255, 255, 255, 0.9); border-color: rgba(0,0,0,0.1); }
+        body.light-mode .sidebar li { color: #666; border-bottom-color: #eee; }
+        body.light-mode .result-item { background: white; border-color: #eee; color: #333; }
+        body.light-mode .result-item strong { color: #555; }
+
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            color: #fff;
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+        /* 导航栏样式直接合入 */
+        .game-navbar {
+            background: rgba(20, 20, 20, 0.95);
+            padding: 0 50px;
+            height: 70px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.4);
+            position: fixed; /* 固定在顶部 */
+            top: 0;
+            left: 0;
+            right: 0;
+            z-index: 1000;
+            border-bottom: 3px solid #4CAF50;
+            backdrop-filter: blur(10px);
+        }
+        .nav-logo {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            color: #4CAF50;
+            font-size: 24px;
+            font-weight: 900;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            cursor: pointer;
+            transition: 0.3s;
+        }
+        .nav-logo:hover {
+            text-shadow: 0 0 15px rgba(76, 175, 80, 0.8);
+            transform: scale(1.05);
+        }
+        .nav-links {
+            display: flex;
+            gap: 30px;
+            list-style: none;
+            margin: 0;
+            padding: 0;
+        }
+        .nav-link {
+            text-decoration: none;
+            color: #ddd;
+            font-size: 16px;
+            font-weight: 600;
+            padding: 10px 15px;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            border-radius: 4px;
+            position: relative;
+        }
+        .nav-link:hover {
+            color: #fff;
+            background: rgba(76, 175, 80, 0.2);
+        }
+        .nav-link::after {
+            content: '';
+            position: absolute;
+            bottom: -5px;
+            left: 50%;
+            width: 0;
+            height: 2px;
+            background: #4CAF50;
+            transition: 0.3s;
+            transform: translateX(-50%);
+            box-shadow: 0 0 10px #4CAF50;
+        }
+        .nav-link:hover::after { width: 80%; }
+        .nav-link.active { color: #4CAF50; }
+        .nav-user {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            color: #fff;
+        }
+        .user-avatar {
+            width: 45px;
+            height: 45px;
+            border-radius: 50%;
+            border: 2px solid #4CAF50;
+            background: #333;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden; /* 确保图片不超出圆圈 */
+            box-shadow: 0 0 10px rgba(76, 175, 80, 0.5);
+            cursor: pointer;
+            transition: 0.3s;
+        }
+        .user-avatar:hover {
+            transform: scale(1.1);
+            border-color: #81C784;
+        }
+        .user-avatar img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        .exclusive-channel {
+            background: linear-gradient(45deg, #ff4081, #7c4dff);
+            color: white;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 13px;
+            font-weight: bold;
+            letter-spacing: 1px;
+            box-shadow: 0 0 10px rgba(255, 64, 129, 0.5);
+            animation: pulseChannel 2s infinite;
+        }
+        @keyframes pulseChannel {
+            0% { transform: scale(1); opacity: 1; }
+            50% { transform: scale(1.05); opacity: 0.8; }
+            100% { transform: scale(1); opacity: 1; }
+        }
+        .main-content {
+            max-width: 800px;
+            margin: 100px auto 0 auto;
+            padding: 0 20px 20px 20px;
+            position: relative;
+            animation: pageEnter 0.8s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+        }
+        @keyframes pageEnter {
+            from { opacity: 0; transform: translateY(20px); filter: blur(5px); }
+            to { opacity: 1; transform: translateY(0); filter: blur(0); }
+        }
+        .page-exit {
+            animation: pageExit 0.6s cubic-bezier(0.4, 0, 0.2, 1) forwards !important;
+        }
+        @keyframes pageExit {
+            from { opacity: 1; transform: translateY(0); filter: blur(0); }
+            to { opacity: 0; transform: translateY(-20px); filter: blur(5px); }
+        }
+        h1 {
+            text-align: center;
+            color: #333;
+            text-shadow: 2px 4px 8px rgba(0,0,0,0.1);
+            background: linear-gradient(to right, #ff8a00, #e52e71, #4CAF50, #2196F3, #ff8a00);
+            background-size: 200% auto;
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+            font-size: 2.8em;
+            font-weight: 900;
+            margin-bottom: 30px;
+            animation: shine 4s linear infinite, floatTitle 3s ease-in-out infinite;
+            transition: all 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            cursor: default;
+        }
+        h1:hover {
+            transform: scale(1.05) translateY(-5px);
+            text-shadow: 0 10px 20px rgba(0,0,0,0.2);
+            filter: brightness(1.2);
+        }
+        @keyframes shine {
+            to { background-position: 200% center; }
+        }
+        @keyframes floatTitle {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-10px); }
+        }
+        .form-group {
+            margin-bottom: 15px;
+            background: rgba(255, 255, 255, 0.05);
+            padding: 15px;
+            border-radius: 8px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+            transition: all 0.3s cubic-bezier(0.165, 0.84, 0.44, 1);
+            animation: formEntry 0.6s ease-out backwards;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(5px);
+        }
+        .form-group:nth-child(1) { animation-delay: 0.1s; }
+        .form-group:nth-child(2) { animation-delay: 0.2s; }
+        .form-group:nth-child(3) { animation-delay: 0.3s; }
+
+        @keyframes formEntry {
+            from { 
+                opacity: 0; 
+                transform: translateX(-30px); 
+            }
+            to { 
+                opacity: 1; 
+                transform: translateX(0); 
+            }
+        }
+
+        .form-group:focus-within {
+            transform: scale(1.01); /* 减小缩放比例，从 1.02 降至 1.01 */
+            box-shadow: 0 4px 12px rgba(76, 175, 80, 0.1);
+            border-left: 4px solid #4CAF50;
+        }
+        input, select {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #eee;
+            border-radius: 6px;
+            transition: all 0.3s ease;
+            background: #fafafa;
+            box-sizing: border-box;
+        }
+        input:focus, select:focus {
+            border-color: #4CAF50;
+            outline: none;
+            background: white;
+            box-shadow: 0 0 8px rgba(76, 175, 80, 0.2);
+        }
+        button {
+            background: linear-gradient(45deg, #4CAF50, #2196F3, #9c27b0, #f44336, #4CAF50);
+            background-size: 400% 400%;
+            animation: buttonGradient 6s ease infinite, pulseGlow 2s infinite alternate;
+            color: white;
+            padding: 15px 25px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 18px;
+            font-weight: bold;
+            letter-spacing: 2px;
+            box-shadow: 0 4px 15px rgba(76, 175, 80, 0.3);
+            transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            display: block;
+            margin: 0 auto;
+            width: 220px;
+            position: relative;
+            overflow: hidden;
+            text-transform: uppercase;
+        }
+        @keyframes buttonGradient {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+        button::before {
+            content: "";
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
+            transition: 0.5s;
+        }
+        button:hover {
+            transform: translateY(-3px) scale(1.05);
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3);
+            filter: brightness(1.1);
+        }
+        button:hover::before {
+            left: 100%;
+            transition: 0.5s;
+        }
+        button:active {
+            transform: translateY(-1px) scale(0.95);
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(-20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+        .error {
+            color: red;
+            font-size: 14px;
+            margin-top: 5px;
+            display: none;
+        }
+        .progress-container {
+            margin-top: 20px;
+            display: none;
+            transition: opacity 1s ease;
+        }
+        .progress-container.fading {
+            opacity: 0;
+        }
+        .progress-bar {
+            height: 30px;
+            background-color: #f1f1f1;
+            border-radius: 4px;
+            position: relative;
+            overflow: hidden;
+        }
+        /* 进度条发光效果 */
+        .progress-bar {
+            height: 35px;
+            background-color: rgba(0, 0, 0, 0.05);
+            border-radius: 20px;
+            position: relative;
+            overflow: hidden;
+            box-shadow: inset 0 2px 5px rgba(0,0,0,0.1);
+            border: 1px solid rgba(76, 175, 80, 0.2);
+        }
+        .progress-fill {
+            height: 100%;
+            /* 彩虹渐变背景 */
+            background: linear-gradient(90deg, 
+                #ff0000, #ff7f00, #ffff00, #00ff00, #0000ff, #4b0082, #8f00ff, #ff0000
+            );
+            background-size: 200% 100%;
+            width: 0%;
+            transition: width 3s cubic-bezier(0.4, 0, 0.2, 1);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: bold;
+            text-shadow: 1px 1px 3px rgba(0,0,0,0.5);
+            position: relative;
+            animation: moveGradient 3s infinite linear, pulseGlow 1.5s infinite alternate;
+            box-shadow: 0 0 20px rgba(255, 255, 255, 0.3);
+            border-radius: 20px;
+        }
+        /* 增加流体波浪效果 */
+        .progress-fill::before {
+            content: "";
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(45deg, rgba(255,255,255,0.2) 25%, transparent 25%, transparent 50%, rgba(255,255,255,0.2) 50%, rgba(255,255,255,0.2) 75%, transparent 75%, transparent);
+            background-size: 40px 40px;
+            animation: moveStripes 1s infinite linear;
+            opacity: 0.3;
+        }
+        /* 进度条头部的火花点 */
+        .progress-fill::after {
+            content: "";
+            position: absolute;
+            right: 0;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 10px;
+            height: 100%;
+            background: white;
+            filter: blur(5px);
+            box-shadow: 0 0 15px white;
+            animation: spark 0.5s infinite alternate;
+        }
+        @keyframes moveGradient {
+            0% { background-position: 0% 50%; }
+            100% { background-position: 100% 50%; }
+        }
+        @keyframes moveStripes {
+            from { background-position: 0 0; }
+            to { background-position: 40px 0; }
+        }
+        /* 动态发光效果适配彩虹色 */
+        @keyframes pulseGlow {
+            from { box-shadow: 0 0 10px rgba(255, 255, 255, 0.2); }
+            to { box-shadow: 0 0 25px rgba(255, 255, 255, 0.5); }
+        }
+        @keyframes spark {
+            from { opacity: 0.5; transform: translateY(-50%) scaleY(0.8); }
+            to { opacity: 1; transform: translateY(-50%) scaleY(1.2); }
+        }
+
+        .results {
+            margin-top: 20px;
+            display: none;
+            transition: all 3s cubic-bezier(0.4, 0, 0.2, 1);
+            opacity: 1;
+            transform: translateY(0) scale(1);
+            filter: blur(0);
+            position: relative;
+        }
+        .results.fading {
+            opacity: 0;
+            transform: translateY(-30px) scale(0.95);
+            filter: blur(15px) brightness(1.2) grayscale(1);
+            pointer-events: none;
+        }
+        /* 数据消失时的扫描线增强 */
+        .results.fading::after {
+            content: "";
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(to bottom, 
+                transparent, 
+                rgba(76, 175, 80, 0.2) 50%, 
+                transparent
+            );
+            background-size: 100% 20px;
+            animation: dataScan 1s infinite linear;
+            pointer-events: none;
+            z-index: 20;
+        }
+        @keyframes dataScan {
+            from { background-position: 0 0; }
+            to { background-position: 0 100%; }
+        }    transition: all 3s cubic-bezier(0.4, 0, 0.2, 1);
+            opacity: 1;
+            transform: translateY(0) scale(1);
+            filter: blur(0);
+        }
+        .results.fading {
+            opacity: 0;
+            transform: translateY(-30px) scale(0.95);
+            filter: blur(15px) brightness(1.5);
+            pointer-events: none;
+        }
+        /* 数据消失时的扫描线增强 */
+        .results.fading::after {
+            content: "";
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(to bottom, 
+                transparent, 
+                rgba(76, 175, 80, 0.2) 50%, 
+                transparent
+            );
+            background-size: 100% 20px;
+            animation: dataScan 1s infinite linear;
+            pointer-events: none;
+        }
+        @keyframes dataScan {
+            from { background-position: 0 0; }
+            to { background-position: 0 100%; }
+        }
+        .result-item {
+            padding: 15px;
+            margin-bottom: 12px;
+            border-radius: 8px;
+            border: 1px solid rgba(0,0,0,0.1);
+            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+            transition: all 0.3s ease;
+            animation: slideUp 0.5s ease-out backwards; /* 入场动画 */
+        }
+        @keyframes slideUp {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .result-item:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        }
+        .success {
+            background-color: #4CAF50;
+            color: white;
+            border-left: 4px solid #2E7D32;
+        }
+        .fail {
+            background-color: #f44336;
+            color: white;
+            border-left: 4px solid #C62828;
+        }
+
+        /* 轮播图样式 */
+        .carousel-container {
+            width: 100%;
+            max-width: 800px;
+            margin: 10px auto 40px auto; /* 调整顶部间距为 5px */
+            position: relative;
+            overflow: hidden;
+            border-radius: 12px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.12);
+            background: #fff;
+            transition: all 3s cubic-bezier(0.4, 0, 0.2, 1); /* 统一使用更强大的 transition */
+            opacity: 1;
+            transform: scale(1);
+            filter: blur(0);
+        }
+        .carousel-container.fading {
+            opacity: 0;
+            transform: scale(0.98);
+            filter: blur(10px);
+            pointer-events: none; /* 消失过程中禁止交互 */
+        }
+        /* 扫描线效果 */
+        .carousel-container::after {
+            content: "";
+            position: absolute;
+            top: -100%;
+            left: 0;
+            width: 100%;
+            height: 5px;
+            background: linear-gradient(to bottom, transparent, #4CAF50, transparent);
+            box-shadow: 0 0 15px #4CAF50;
+            z-index: 15;
+            display: none;
+        }
+        .carousel-container.fading::after {
+            display: block;
+            animation: scan 1.5s infinite linear;
+        }
+        @keyframes scan {
+            0% { top: 0%; }
+            100% { top: 100%; }
+        }
+        .carousel {
+            position: relative;
+            width: 100%;
+            height: 300px;
+        }
+        .carousel-img {
+            position: absolute;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 300px;
+            object-fit: cover;
+            opacity: 0;
+            transform: scale(1.1) rotate(-1deg); /* 初始状态微缩放且旋转 */
+            transition: opacity 1.2s cubic-bezier(0.4, 0, 0.2, 1), transform 1.2s cubic-bezier(0.4, 0, 0.2, 1);
+            z-index: 1;
+        }
+        .carousel-img.active {
+            opacity: 1;
+            transform: scale(1) rotate(0deg); /* 激活时产生“平推进入”感 */
+            z-index: 2;
+            animation: kenBurns 10s infinite alternate linear; /* 增加持续的缓慢缩放效果 */
+        }
+        @keyframes kenBurns {
+            from { transform: scale(1); }
+            to { transform: scale(1.1); }
+        }
+        .carousel-dots {
+            position: absolute;
+            bottom: 15px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            gap: 10px;
+            z-index: 10; /* 确保在图片上方 */
+        }
+        .dot {
+            width: 12px;
+            height: 12px;
+            background: rgba(255, 255, 255, 0.3);
+            border: 2px solid rgba(255, 255, 255, 0.5);
+            border-radius: 50%;
+            cursor: pointer;
+            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            position: relative;
+        }
+        .dot.active {
+            width: 30px; /* 激活时变长，类似游戏 UI */
+            border-radius: 6px;
+            background: #4CAF50;
+            border-color: #4CAF50;
+            box-shadow: 0 0 10px rgba(76, 175, 80, 0.8);
+        }
+        .dot::after {
+            content: "";
+            position: absolute;
+            top: -4px;
+            left: -4px;
+            right: -4px;
+            bottom: -4px;
+            border: 1px solid transparent;
+            border-radius: 50%;
+            transition: all 0.3s;
+        }
+        .dot.active::after {
+            border-color: #4CAF50;
+            transform: scale(1.2);
+            border-radius: 8px;
+        }
+        .dot:hover {
+            transform: scale(1.2);
+            background: #4CAF50;
+            border-color: #4CAF50;
+        }
+
+        /* 轮播图左右按钮 */
+        .carousel-btn {
+            position: absolute;
+            top: 50%;
+            transform: translateY(-50%);
+            background: rgba(0, 0, 0, 0.3);
+            color: white;
+            border: none;
+            width: 45px;
+            height: 45px;
+            cursor: pointer;
+            z-index: 10;
+            font-size: 24px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); /* 增加弹性过渡 */
+            user-select: none;
+            backdrop-filter: blur(4px); /* 磨砂玻璃效果 */
+        }
+        .carousel-btn:hover {
+            background: rgba(76, 175, 80, 0.8); /* 悬浮时变为主题色 */
+            transform: translateY(-50%) scale(1.15);
+            box-shadow: 0 0 15px rgba(76, 175, 80, 0.5);
+        }
+        .carousel-btn:active {
+            transform: translateY(-50%) scale(0.9); /* 点击时缩小 */
+        }
+        .prev-btn { left: 15px; }
+        .next-btn { right: 15px; }
+        /* 图片上的装饰文字遮罩 */
+        .carousel-info {
+            position: absolute;
+            bottom: 40px;
+            left: 30px;
+            z-index: 5;
+            color: white;
+            text-shadow: 0 2px 10px rgba(0,0,0,0.5);
+            pointer-events: none;
+            opacity: 0;
+            transform: translateX(-20px);
+            transition: all 0.8s 0.3s ease-out;
+        }
+        .carousel-img.active + .carousel-info,
+        .carousel-container:hover .carousel-info {
+            opacity: 1;
+            transform: translateX(0);
+        }
+        .carousel-info h4 {
+            margin: 0;
+            font-size: 20px;
+            background: rgba(76, 175, 80, 0.8);
+            display: inline-block;
+            padding: 5px 15px;
+            border-radius: 4px;
+            backdrop-filter: blur(5px);
+        }
+
+        /* 悬浮球样式 */
+        .float-ball {
+            position: fixed;
+            width: 55px;
+            height: 55px;
+            background: linear-gradient(135deg, #4CAF50, #81C784);
+            border-radius: 50%;
+            right: 30px;
+            bottom: 30%; /* 进一步下移，避免挡字 */
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 24px;
+            box-shadow: 0 4px 15px rgba(76, 175, 80, 0.4);
+            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            z-index: 999;
+            animation: ballPulse 2s infinite ease-in-out;
+            opacity: 0; /* 默认隐藏 */
+            pointer-events: none; /* 默认不可点击 */
+        }
+        .float-ball.visible {
+            opacity: 1;
+            pointer-events: auto;
+        }
+        .float-ball::before {
+            content: "";
+            position: absolute;
+            top: -5px;
+            left: -5px;
+            right: -5px;
+            bottom: -5px;
+            border: 2px solid #4CAF50;
+            border-radius: 50%;
+            opacity: 0;
+            animation: ripple 2s infinite;
+        }
+        .float-ball:hover {
+            transform: scale(1.2) rotate(360deg); /* 移除 translateY(-50%) */
+            background: linear-gradient(135deg, #45a049, #66bb6a);
+            box-shadow: 0 6px 20px rgba(76, 175, 80, 0.6);
+        }
+        .float-ball:active {
+            transform: scale(0.9); /* 移除 translateY(-50%) */
+        }
+        @keyframes ballPulse {
+            0%, 100% { box-shadow: 0 4px 15px rgba(76, 175, 80, 0.4); }
+            50% { box-shadow: 0 4px 25px rgba(76, 175, 80, 0.8), 0 0 10px rgba(76, 175, 80, 0.5); }
+        }
+        @keyframes ripple {
+            0% { transform: scale(1); opacity: 0.5; }
+            100% { transform: scale(1.4); opacity: 0; }
+        }
+
+        /* 侧边装饰栏样式 */
+        /* 浅色模式适配 */
+        body.light-mode {
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%) !important;
+            color: #333 !important;
+        }
+        body.light-mode .game-navbar {
+            background: rgba(255, 255, 255, 0.95);
+        }
+        body.light-mode .nav-link { color: #555; }
+        body.light-mode .main-content {
+            background: rgba(255, 255, 255, 0.8);
+            border-color: rgba(0,0,0,0.1);
+        }
+        body.light-mode h1 { color: #4CAF50; }
+        body.light-mode .form-group {
+            background: #fff !important;
+            border-color: #eee !important;
+        }
+        body.light-mode .form-group label { color: #333 !important; }
+        body.light-mode input, body.light-mode select {
+            background: #fafafa !important;
+            color: #333 !important;
+            border-color: #eee !important;
+        }
+        body.light-mode .sidebar {
+            background: rgba(255, 255, 255, 0.8);
+            border-color: rgba(0,0,0,0.1);
+        }
+        body.light-mode .sidebar li { color: #555; border-bottom-color: #eee; }
+        body.light-mode .carousel-container { border-color: rgba(0,0,0,0.1); }
+
+        .sidebar {
+            position: fixed;
+            top: 150px;
+            width: 180px;
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(15px);
+            padding: 20px;
+            border-radius: 15px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+            z-index: 100;
+            transition: all 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+
+        /* 移动端响应式优化 */
+        @media screen and (max-width: 1200px) {
+            .sidebar {
+                display: none; /* 屏幕较小时隐藏侧边栏，避免挡字 */
+            }
+            .main-content {
+                margin: 80px auto 20px !important;
+                width: 95% !important;
+                padding: 20px !important;
+            }
+            .game-navbar {
+                padding: 10px 15px;
+            }
+            .nav-links {
+                gap: 10px;
+            }
+            .nav-link {
+                font-size: 13px;
+                padding: 5px 8px;
+            }
+            .nav-logo {
+                font-size: 16px;
+            }
+            .exclusive-channel {
+                display: none; /* 手机端隐藏专属通道文字 */
+            }
+        }
+
+        @media screen and (max-width: 480px) {
+            h1 {
+                font-size: 24px;
+            }
+            .nav-links {
+                display: none; /* 极小屏幕隐藏导航 */
+            }
+            .carousel-container {
+                height: 200px;
+            }
+            .carousel, .carousel-img {
+                height: 200px;
+            }
+        }
+
+        .sidebar-left { 
+            left: 30px; 
+            animation: slideInLeft 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .sidebar-right { 
+            right: 20px; /* 紧贴右边 */
+            animation: slideInRight 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        @keyframes slideInLeft {
+            from { opacity: 0; transform: translate(-50px, -50%); }
+            to { opacity: 1; transform: translate(0, -50%); }
+        }
+        @keyframes slideInRight {
+            from { opacity: 0; transform: translate(50px, -50%); }
+            to { opacity: 1; transform: translate(0, -50%); }
+        }
+        
+        .sidebar {
+            position: fixed;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 200px;
+            background: rgba(255, 255, 255, 0.05);
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(15px);
+            z-index: 100;
+        }
+
+        .sidebar h3 {
+            font-size: 16px;
+            color: #4CAF50;
+            margin-top: 0;
+            border-bottom: 2px solid rgba(255, 255, 255, 0.1);
+            padding-bottom: 8px;
+            margin-bottom: 10px;
+        }
+        .sidebar ul {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+        .sidebar li {
+            padding: 8px 0;
+            font-size: 14px;
+            color: #ddd;
+            border-bottom: 1px dashed rgba(255, 255, 255, 0.1);
+            cursor: pointer;
+            transition: color 0.3s;
+        }
+        .sidebar li:hover {
+            color: #4CAF50;
+        }
+        /* 背景装饰 */
+        .bg-decor {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: -1;
+            overflow: hidden;
+        }
+        .shape {
+            position: absolute;
+            opacity: 0.25; /* 增加透明度，从 0.1 提高到 0.25 */
+            animation: float 10s infinite linear; /* 速度从 20s 提升到 10s */
+            color: #4CAF50;
+            font-size: 40px;
+            filter: drop-shadow(0 0 5px rgba(76, 175, 80, 0.3)); /* 增加发光效果使其更清晰 */
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.1);
+        }
+        @keyframes float {
+            from { transform: translateY(110vh) rotate(0deg); }
+            to { transform: translateY(-10vh) rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <div class="bg-decor" id="bgDecor"></div>
+    <div class="float-ball" id="floatBall">↑</div>
+
+    <!-- 左侧热门游戏 -->
+    <div class="sidebar sidebar-left">
+        <h3>🔥 热门查询</h3>
+        <ul>
+            <li>🔥 烈焰觉醒</li>
+            <li>🌑 遗弃之地</li>
+            <li>🏰 胡莱三国</li>
+            <li>🦋 斗罗大陆</li>
+            <li>🥊 拳皇98</li>
+            <li>🗡️ 剑玲珑</li>
+        </ul>
+    </div>
+
+    <!-- 右侧查询须知 -->
+    <div class="sidebar sidebar-right">
+        <h3>💡 查询须知</h3>
+        <div class="sidebar-tips">
+            <p>1. 请确保角色ID输入准确无误。</p>
+            <p>2. 审核过程约需3秒，请耐心等待。</p>
+            <p>3. 如遇查询失败，请检查网络连接。</p>
+            <p>4. 每日每个账号限查10次。</p>
+        </div>
+    </div>
+
+    <nav class="game-navbar">
+        <a href="index.html" class="nav-logo" style="text-decoration: none;">🎮 GAME CENTER</a>
+        <ul class="nav-links">
+            <li><a href="index.html" class="nav-link active">🏠 首页</a></li>
+            <li><a href="game_list.html" class="nav-link">🎮 游戏大全</a></li>
+            <li><a href="admin_dashboard.html" class="nav-link">🛡️ 管理面板</a></li>
+            <li><a href="settings.html" class="nav-link">⚙️ 设置</a></li>
+        </ul>
+        <div class="nav-user">
+            <span class="exclusive-channel">💎 专属通道</span>
+            <div class="user-avatar" onclick="location.href='settings.html#account-section'">
+                <img src="./avatar.jpg" id="navAvatar" alt="Avatar" onerror="this.src='https://img.icons8.com/color/96/girl-profile.png'">
+            </div>
+        </div>
+    </nav>
+
+    <div class="main-content">
+        <h1>游戏福利预约</h1>
+    <form id="gameForm">
+        <div class="form-group">
+            <label for="platform" id="lblPlatform">选择区服:</label>
+            <select id="platform" required>
+                <option value="">请选择</option>
+                <option value="ios">iOS</option>
+                <option value="android">安卓</option>
+            </select>
+        </div>
+        <div class="form-group">
+            <label for="gameName" id="lblGameName">游戏名称:</label>
+            <input type="text" id="gameName" required placeholder="请输入游戏名称">
+        </div>
+        <div class="form-group">
+            <label for="character" id="lblCharacter">角色名/角色ID:</label>
+            <input type="text" id="character" required placeholder="请输入角色名或角色ID">
+            <div id="characterError" class="error">请输入角色名或角色ID</div>
+        </div>
+        <button type="submit">提交</button>
+    </form>
+
+    <div class="progress-container" id="progressContainer">
+        <div class="progress-bar">
+            <div class="progress-fill" id="progressFill">申请中</div>
+        </div>
+    </div>
+
+    <div class="results" id="results"></div>
+
+    <!-- 轮播图模块 -->
+    <div class="carousel-container">
+        <div class="carousel">
+            <img src="./left1.jpg" class="carousel-img active" alt="Carousel 1">
+            <img src="./left2.jpg" class="carousel-img" alt="Carousel 2">
+            <img src="./left3.jpg" class="carousel-img" alt="Carousel 3">
+            <img src="./right1.jpg" class="carousel-img" alt="Carousel 4">
+            <img src="./right2.jpg" class="carousel-img" alt="Carousel 5">
+            <img src="./right3.jpg" class="carousel-img" alt="Carousel 6">
+            <div class="carousel-info">
+                <h4>游萧互娱</h4>
+            </div>
+        </div>
+        <button class="carousel-btn prev-btn" id="prevBtn">&lt;</button>
+        <button class="carousel-btn next-btn" id="nextBtn">&gt;</button>
+        <div class="carousel-dots">
+            <span class="dot active"></span>
+            <span class="dot"></span>
+            <span class="dot"></span>
+            <span class="dot"></span>
+            <span class="dot"></span>
+            <span class="dot"></span>
+        </div>
+    </div>
+
+    </div> <!-- 闭合 main-content -->
+
+    <script>
+        // 登录状态拦截
+        function checkAuth() {
+            if (sessionStorage.getItem('isAdminLoggedIn') !== 'true') {
+                window.location.href = 'admin_auth.html';
+            }
+        }
+        checkAuth();
+
+        const i18n = {
+            zh: {
+                title: "游戏福利预约",
+                navHome: "🏠 首页",
+                navGames: "🎮 游戏大全",
+                navAdmin: "🛡️ 管理面板",
+                navSettings: "⚙️ 设置",
+                platform: "选择区服:",
+                gameName: "游戏名称:",
+                character: "角色名/角色ID:",
+                submit: "提交",
+                placeholderGame: "请输入游戏名称",
+                placeholderChar: "请输入角色名或角色ID",
+                hotQuery: "🔥 热门查询",
+                notice: "💡 查询须知",
+                noticeTips: [
+                    "1. 请确保角色ID输入准确无误。",
+                    "2. 审核过程约需3秒，请耐心等待。",
+                    "3. 如遇查询失败，请检查网络连接。",
+                    "4. 每日每个账号限查10次。"
+                ],
+                applying: "申请中"
+            },
+            en: {
+                title: "Game Welfare Appointment",
+                navHome: "🏠 Home",
+                navGames: "🎮 Games",
+                navAdmin: "🛡️ Admin",
+                navSettings: "⚙️ Settings",
+                platform: "Platform:",
+                gameName: "Game Name:",
+                character: "Character ID:",
+                submit: "SUBMIT",
+                placeholderGame: "Enter game name",
+                placeholderChar: "Enter character ID",
+                hotQuery: "🔥 Trending",
+                notice: "💡 Notice",
+                noticeTips: [
+                    "1. Ensure Character ID is accurate.",
+                    "2. Process takes ~3s, please wait.",
+                    "3. Check connection if failed.",
+                    "4. Limit 10 queries per day."
+                ],
+                applying: "Processing"
+            },
+            jp: {
+                title: "ゲーム特典予約",
+                navHome: "🏠 ホーム",
+                navGames: "🎮 ゲーム一覧",
+                navAdmin: "🛡️ 管理パネル",
+                navSettings: "⚙️ 設定",
+                platform: "サーバー選択:",
+                gameName: "ゲーム名:",
+                character: "キャラID:",
+                submit: "送信",
+                placeholderGame: "ゲーム名を入力してください",
+                placeholderChar: "キャラ名またはIDを入力",
+                hotQuery: "🔥 急上昇",
+                notice: "💡 注意事項",
+                noticeTips: [
+                    "1. IDが正確であることを確認してください。",
+                    "2. 審査には約3秒かかります。",
+                    "3. 失敗した場合は接続を確認してください。",
+                    "4. 1日10回まで照会可能です。"
+                ],
+                applying: "審査中"
+            }
+        };
+
+        // 加载并应用设置
+        function applySettings() {
+            try {
+                const saved = JSON.parse(localStorage.getItem('gameCenterSettings')) || { language: 'zh', darkMode: true };
+                
+                // 应用语言
+                const lang = saved.language || 'zh';
+                const dict = i18n[lang] || i18n['zh'];
+                
+                if (dict) {
+                    if (document.title) document.title = dict.title;
+                    const h1 = document.querySelector('h1');
+                    if (h1) h1.textContent = dict.title;
+                    
+                    const navLinks = document.querySelectorAll('.nav-link');
+                    if (navLinks.length >= 4) {
+                        navLinks[0].textContent = dict.navHome;
+                        navLinks[1].textContent = dict.navGames;
+                        navLinks[2].textContent = dict.navAdmin;
+                        navLinks[3].textContent = dict.navSettings;
+                    }
+                    
+                    // 优先设置表单标签
+                    const labels = {
+                        'lblPlatform': dict.platform,
+                        'lblGameName': dict.gameName,
+                        'lblCharacter': dict.character
+                    };
+                    
+                    for (const [id, text] of Object.entries(labels)) {
+                        const el = document.getElementById(id);
+                        if (el) el.textContent = text;
+                    }
+                    
+                    const gameNameInput = document.getElementById('gameName');
+                    if (gameNameInput) gameNameInput.placeholder = dict.placeholderGame;
+                    
+                    const characterInput = document.getElementById('character');
+                    if (characterInput) characterInput.placeholder = dict.placeholderChar;
+                    
+                    const submitBtn = document.querySelector('button[type="submit"]');
+                    if (submitBtn) submitBtn.textContent = dict.submit;
+                    
+                    const sidebarLeftH3 = document.querySelector('.sidebar-left h3');
+                    if (sidebarLeftH3) sidebarLeftH3.textContent = dict.hotQuery;
+                    
+                    const sidebarRightH3 = document.querySelector('.sidebar-right h3');
+                    if (sidebarRightH3) sidebarRightH3.textContent = dict.notice;
+                    
+                    const tipsContainer = document.querySelector('.sidebar-tips');
+                    if (tipsContainer && dict.noticeTips) {
+                        const tipColor = (saved.darkMode !== false) ? 'rgba(255, 255, 255, 0.6)' : '#666';
+                        tipsContainer.innerHTML = dict.noticeTips.map(tip => `<p style="margin: 8px 0; line-height: 1.4; font-size: 13px; color: ${tipColor};">${tip}</p>`).join('');
+                    }
+
+                    const progressFill = document.getElementById('progressFill');
+                    if (progressFill) progressFill.textContent = dict.applying;
+                }
+
+                // 应用深色模式
+                const isDark = saved.darkMode !== false;
+                if (isDark) {
+                    document.body.classList.remove('light-mode');
+                } else {
+                    document.body.classList.add('light-mode');
+                }
+
+                const userBadge = document.querySelector('.exclusive-channel');
+                if (userBadge && saved.userName) {
+                    const suffix = lang === 'zh' ? '专属' : (lang === 'jp' ? '専用' : 'Exclusive');
+                    userBadge.textContent = `💎 ${saved.userName} ${suffix}`;
+                }
+                
+                // 应用头像 (统一逻辑)
+                if (saved.avatar) {
+                    const navAvatar = document.getElementById('navAvatar');
+                    if (navAvatar) navAvatar.src = saved.avatar;
+                }
+            } catch (err) {
+                console.error('applySettings error:', err);
+            }
+        }
+
+        // 页面丝滑跳转逻辑
+        document.querySelectorAll('a').forEach(link => {
+            link.addEventListener('click', function(e) {
+                const href = this.getAttribute('href');
+                if (href && href !== '#' && !href.startsWith('http') && !href.includes('javascript:void(0)')) {
+                    e.preventDefault();
+                    const container = document.querySelector('.main-content');
+                    if (container) {
+                        container.classList.add('page-exit');
+                        setTimeout(() => {
+                            window.location.href = href;
+                        }, 500);
+                    } else {
+                        window.location.href = href;
+                    }
+                }
+            });
+        });
+
+        // 背景装饰初始化
+        function initBgDecor() {
+            const saved = JSON.parse(localStorage.getItem('gameCenterSettings'));
+            if (saved && saved.bgAnim === false) return; // 如果关闭了动画则不初始化
+
+            const decor = document.getElementById('bgDecor');
+            const shapes = ['△', '○', '□', '✕'];
+            for (let i = 0; i < 15; i++) {
+                const span = document.createElement('span');
+                span.className = 'shape';
+                span.textContent = shapes[Math.floor(Math.random() * shapes.length)];
+                span.style.left = Math.random() * 100 + 'vw';
+                span.style.animationDuration = (Math.random() * 5 + 5) + 's'; /* 随机速度从 10-20s 提升到 5-10s */
+                span.style.animationDelay = (Math.random() * 5) + 's';
+                span.style.fontSize = (Math.random() * 20 + 20) + 'px';
+                decor.appendChild(span);
+            }
+        }
+        // 初始化
+        applySettings();
+        initBgDecor();
+
+        // 轮播图逻辑
+        const carouselImgs = document.querySelectorAll('.carousel-img');
+        const dots = document.querySelectorAll('.dot');
+        let currentIndex = 0;
+        let carouselTimer = null;
+
+        function showSlide(index) {
+            carouselImgs.forEach((img, i) => {
+                img.classList.toggle('active', i === index);
+                if (dots[i]) dots[i].classList.toggle('active', i === index);
+            });
+            currentIndex = index;
+        }
+
+        function nextSlide() {
+            let nextIndex = (currentIndex + 1) % carouselImgs.length;
+            showSlide(nextIndex);
+        }
+
+        function prevSlide() {
+            let prevIndex = (currentIndex - 1 + carouselImgs.length) % carouselImgs.length;
+            showSlide(prevIndex);
+        }
+
+        function startCarousel() {
+            if (carouselTimer) clearInterval(carouselTimer);
+            carouselTimer = setInterval(nextSlide, 1500);
+        }
+
+        // 移除鼠标进入暂停逻辑，改为始终播放
+        // document.querySelector('.carousel-container').addEventListener('mouseenter', () => {
+        //     clearInterval(carouselTimer);
+        // });
+        
+        // 绑定按钮点击事件
+        document.getElementById('prevBtn').addEventListener('click', () => {
+            prevSlide();
+            startCarousel(); // 重置定时器，防止点击后立即自动切换
+        });
+        document.getElementById('nextBtn').addEventListener('click', () => {
+            nextSlide();
+            startCarousel(); // 重置定时器
+        });
+
+        dots.forEach((dot, i) => {
+            dot.addEventListener('click', () => {
+                showSlide(i);
+                startCarousel(); // 重置定时器
+            });
+        });
+
+        // 初始化轮播图
+        showSlide(0);
+        startCarousel();
+
+        let resultsCycleTimer = null;
+
+        // 表单提交逻辑
+        document.getElementById('gameForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            // 如果有正在运行的循环定时器，先清除
+            if (resultsCycleTimer) clearTimeout(resultsCycleTimer);
+
+            const userData = {
+                platform: document.getElementById('platform').value,
+                gameName: document.getElementById('gameName').value,
+                character: document.getElementById('character').value
+            };
+
+            const carousel = document.querySelector('.carousel-container');
+            const results = document.getElementById('results');
+            const progress = document.getElementById('progressContainer');
+            const progressFill = document.getElementById('progressFill');
+
+            // 立即重置结果区域和进度条状态
+            results.classList.remove('fading');
+            results.style.display = 'none';
+            results.style.opacity = '1';
+            
+            // 轮播图开始淡出
+            carousel.style.display = 'block';
+            carousel.classList.remove('fading');
+            carousel.offsetHeight; 
+            carousel.classList.add('fading');
+
+            // 显示并启动进度条
+            progress.style.display = 'block';
+            progressFill.style.transition = 'width 3s cubic-bezier(0.4, 0, 0.2, 1)';
+            progressFill.style.width = '100%';
+            
+            setTimeout(function() {
+                const saved = JSON.parse(localStorage.getItem('gameCenterSettings')) || { language: 'zh' };
+                const lang = saved.language || 'zh';
+                const finishText = lang === 'en' ? 'Submission Completed' : (lang === 'jp' ? '申請が完了しました' : '申请完成');
+                const applyingText = i18n[lang].applying;
+                
+                progressFill.textContent = finishText;
+                carousel.style.display = 'none'; // 彻底隐藏轮播图
+                
+                // --- 增加数据持久化逻辑 ---
+                const history = JSON.parse(localStorage.getItem('userSubmissionHistory')) || [];
+                const auditNumber = 'USER-' + Math.floor(Math.random() * 10000).toString().padStart(4, '0');
+                const newRecord = {
+                    id: auditNumber,
+                    gameName: userData.gameName,
+                    platform: userData.platform,
+                    character: userData.character,
+                    timestamp: new Date().toLocaleString(),
+                    adminName: '用户提交'
+                };
+                history.unshift(newRecord);
+                localStorage.setItem('userSubmissionHistory', JSON.stringify(history));
+                
+                generateResults(userData, auditNumber); // 传递生成的 ID 给结果展示函数
+
+                // --- 核心循环逻辑：10秒后开启“交叉淡入淡出” ---
+                resultsCycleTimer = setTimeout(() => {
+                    // 1. 结果和进度条开始慢慢变透明
+                    results.classList.add('fading'); 
+                    progress.classList.add('fading');
+                    
+                    // 2. 同步让轮播图开始慢慢变显现
+                    carousel.style.display = 'block';
+                    carousel.classList.add('fading'); // 初始透明+缩放+模糊
+                    carousel.offsetHeight; // 触发重绘
+                    carousel.classList.remove('fading'); // 开始淡入动画
+                    
+                    // 3. 动画结束后彻底清理状态
+                    setTimeout(() => {
+                        results.style.display = 'none';
+                        results.classList.remove('fading');
+                        progress.style.display = 'none';
+                        progress.classList.remove('fading');
+                        
+                        // 重置进度条文字和状态，为下一次提交做准备
+                        progressFill.style.transition = 'none';
+                        progressFill.style.width = '0%';
+                        progressFill.textContent = applyingText;
+                    }, 3000); // 等待 3 秒淡化过程结束
+                }, 10000); // 数据显示 10 秒
+            }, 3000); /* 匹配 3 秒的进度条/淡出时间 */
+        });
+
+        function generateResults(userData = null, currentAuditNumber = null) {
+            const saved = JSON.parse(localStorage.getItem('gameCenterSettings')) || { language: 'zh' };
+            const lang = saved.language || 'zh';
+            const resultsContainer = document.getElementById('results');
+            resultsContainer.style.display = 'block';
+            resultsContainer.innerHTML = '';
+
+            const i18nRes = {
+                zh: { id: "申请编号", name: "游戏名称", role: "角色名称", roleId: "角色ID", time: "提交时间", status: "申请情况", success: "申请成功", fail: "申请失败" },
+                en: { id: "Apply ID", name: "Game Name", role: "Role Name", roleId: "Role ID", time: "Submit Time", status: "Status", success: "Success", fail: "Failed" },
+                jp: { id: "申請番号", name: "ゲーム名", role: "キャラ名", roleId: "キャラID", time: "提出時間", status: "申請状況", success: "申請成功", fail: "申請失敗" }
+            };
+            const labels = i18nRes[lang] || i18nRes.zh;
+
+            // 1. 先渲染当前用户提交的结果 (放在最顶部)
+            if (userData) {
+                const item = document.createElement('div');
+                item.className = 'result-item success';
+                item.style.animationDelay = '0s';
+                const auditNumber = currentAuditNumber || ('USER-' + Math.floor(Math.random() * 10000).toString().padStart(4, '0'));
+                item.innerHTML = `
+                    <strong>${labels.id}:</strong> ${auditNumber} <br>
+                    <strong>${labels.name}:</strong> ${userData.gameName} <br>
+                    <strong>${labels.role}:</strong> ${userData.character} <br>
+                    <strong>${labels.roleId}:</strong> ${userData.character} <br>
+                    <strong>${labels.time}:</strong> ${new Date().toLocaleString()} <br>
+                    <strong>${labels.status}:</strong> ${labels.success}
+                `;
+                resultsContainer.appendChild(item);
+            }
+
+            // 2. 整合模拟历史数据
+            const gameNameInput = userData ? userData.gameName : (document.getElementById('gameName').value || 'Default Game');
+            const count = Math.floor(Math.random() * 41) + 60;
+            const commonChineseChars = '的一是在不了有人和这中大为上个国我以要他时来用们生到作地于出就分对成会可主发年动同工也能下过子说产种面而方后多定行学法所民得经十三之进着等部度家电力里如水化高自二理起小物现实加量都两体制机当使点从业本去把性好应开它合还因由其些然前外天政四日那社义事平形相全表间样与关各重新线内数正心反你明看原又么利比或但质气第向道命此变条只没结解问意建月公无系军很情者最立代想已通并提直题党程展五果料象员革位入常文总次品式活设及管特件长求老头基资边流路级少图山统接知较将组见计别她手角期根论运农指几九区强放决西被干做必战先回则任取据处队南给色光门即保治北造百规热领七海口东导器压志世金增争济阶油思术极交受联什认六共权收证改清己美再采转更单风切打白教速花带安场身车例真务具万每目至达走积示议声报斗完类八离华名确才科张信马节话米整空元况今集温传土许步群广石记需段研界拉林律叫且究观越织装影算低持音众书布复容儿须际商非验连断深难近矿千周委素技备半办青省列习响约支般史感劳便团往酸历市克何除消构府称太准精值号率族维划选标写存候毛亲快效斯院查江型眼王按格养易置派层片始却专状育厂京识适属圆包火住调满县局照参红细引听该铁价严龙飞';
+            const generatedIDs = new Set();
+            
+            for (let i = 0; i < count; i++) {
+                const item = document.createElement('div');
+                item.className = 'result-item';
+                item.style.animationDelay = ((i + (userData ? 1 : 0)) * 0.05) + 's';
+                const isSuccess = Math.random() > 0.2;
+                item.classList.add(isSuccess ? 'success' : 'fail');
+                const nameLength = Math.floor(Math.random() * 5) + 2;
+                let randomName = '';
+                for (let j = 0; j < nameLength; j++) {
+                    randomName += commonChineseChars.charAt(Math.floor(Math.random() * commonChineseChars.length));
+                }
+                let roleID;
+                do {
+                    roleID = Math.floor(Math.random() * 1000000).toString().padStart(6, '0') + 
+                             (Math.floor(Math.random() * 100) + 1900).toString().substr(2) +
+                             (Math.floor(Math.random() * 12) + 1).toString().padStart(2, '0') +
+                             (Math.floor(Math.random() * 28) + 1).toString().padStart(2, '0') +
+                             Math.floor(Math.random() * 1000).toString().padStart(3, '0') +
+                             (Math.random() > 0.5 ? 'X' : Math.floor(Math.random() * 10));
+                } while (generatedIDs.has(roleID));
+                generatedIDs.add(roleID);
+                const submitDate = new Date();
+                submitDate.setMinutes(submitDate.getMinutes() - Math.floor(Math.random() * 60));
+                const auditNumber = String.fromCharCode(65 + Math.floor(Math.random() * 26)) + 
+                                   String.fromCharCode(65 + Math.floor(Math.random() * 26)) + '-' + 
+                                   Math.floor(Math.random() * 10000).toString().padStart(4, '0');
+                item.innerHTML = `
+                    <strong>${labels.id}:</strong> ${auditNumber} <br>
+                    <strong>${labels.name}:</strong> ${gameNameInput} <br>
+                    <strong>${labels.role}:</strong> ${randomName} <br>
+                    <strong>${labels.roleId}:</strong> ${roleID} <br>
+                    <strong>${labels.time}:</strong> ${submitDate.toLocaleString()} <br>
+                    <strong>${labels.status}:</strong> ${isSuccess ? labels.success : labels.fail}
+                `;
+                resultsContainer.appendChild(item);
+            }
+        }
+
+        // 悬浮球功能
+        const floatBall = document.getElementById('floatBall');
+        floatBall.addEventListener('click', () => {
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        });
+        let lastScrollTop = 0;
+        window.addEventListener('scroll', () => {
+            const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
+            
+            // 当滚动超过 200px 时显示悬浮球
+            if (scrollTop > 200) {
+                floatBall.classList.add('visible');
+            } else {
+                floatBall.classList.remove('visible');
+            }
+
+            if (scrollTop > lastScrollTop) {
+                floatBall.style.opacity = '0.5';
+                floatBall.style.transform = 'translateY(10px)';
+            } else {
+                floatBall.style.opacity = '1';
+                floatBall.style.transform = 'translateY(0)';
+            }
+            lastScrollTop = scrollTop;
+        });
+    </script>
+</body>
+</html>

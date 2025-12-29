@@ -1,0 +1,520 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>管理员中心 - GAME CENTER</title>
+    <style>
+        :root {
+            --primary-color: #4CAF50;
+            --bg-dark: #0f0f1a;
+            --card-bg: rgba(30, 30, 46, 0.9);
+            --text-main: #e0e0e0;
+        }
+
+        body {
+            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            background: radial-gradient(circle at center, #1a1a2e 0%, #0f0f1a 100%);
+            color: var(--text-main);
+            margin: 0;
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            overflow: hidden;
+        }
+
+        /* 背景装饰 */
+        .bg-glow {
+            position: absolute;
+            width: 500px;
+            height: 500px;
+            background: radial-gradient(circle, rgba(76, 175, 80, 0.1) 0%, transparent 70%);
+            z-index: -1;
+            filter: blur(50px);
+            animation: pulse 8s infinite alternate;
+        }
+
+        @keyframes pulse {
+            from { transform: scale(1); opacity: 0.5; }
+            to { transform: scale(1.2); opacity: 0.8; }
+        }
+
+        .auth-container {
+            width: 400px;
+            background: var(--card-bg);
+            padding: 40px;
+            border-radius: 20px;
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(76, 175, 80, 0.3);
+            box-shadow: 0 20px 50px rgba(0,0,0,0.5);
+            position: relative;
+            transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .auth-header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .auth-logo {
+            font-size: 40px;
+            margin-bottom: 10px;
+            display: block;
+        }
+
+        .auth-title {
+            font-size: 24px;
+            font-weight: bold;
+            color: var(--primary-color);
+            letter-spacing: 2px;
+        }
+
+        .tab-group {
+            display: flex;
+            margin-bottom: 30px;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+        }
+
+        .tab {
+            flex: 1;
+            text-align: center;
+            padding: 10px;
+            cursor: pointer;
+            transition: 0.3s;
+            color: #888;
+            font-weight: bold;
+        }
+
+        .tab.active {
+            color: var(--primary-color);
+            border-bottom: 2px solid var(--primary-color);
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+            position: relative;
+        }
+
+        .form-group label {
+            display: block;
+            font-size: 13px;
+            color: #aaa;
+            margin-bottom: 8px;
+            margin-left: 5px;
+        }
+
+        .form-group input {
+            width: 100%;
+            padding: 12px 15px;
+            background: rgba(0,0,0,0.3);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 8px;
+            color: #fff;
+            box-sizing: border-box;
+            transition: 0.3s;
+            outline: none;
+        }
+
+        .form-group input:focus {
+            border-color: var(--primary-color);
+            box-shadow: 0 0 10px rgba(76, 175, 80, 0.2);
+            background: rgba(0,0,0,0.5);
+        }
+
+        .btn-auth {
+            width: 100%;
+            padding: 14px;
+            background: linear-gradient(45deg, #4CAF50, #45a049);
+            border: none;
+            border-radius: 8px;
+            color: white;
+            font-weight: bold;
+            font-size: 16px;
+            cursor: pointer;
+            transition: 0.3s;
+            margin-top: 10px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .btn-auth:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 20px rgba(76, 175, 80, 0.4);
+        }
+
+        .auth-footer {
+            margin-top: 25px;
+            text-align: center;
+            font-size: 13px;
+            color: #666;
+        }
+
+        .auth-footer a {
+            color: var(--primary-color);
+            text-decoration: none;
+        }
+
+        /* 动画效果 */
+        .fade-in { animation: fadeIn 0.5s ease-out; }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        #loginForm, #registerForm {
+            display: none;
+        }
+
+        #loginForm.active, #registerForm.active {
+            display: block;
+        }
+
+        .message {
+            position: fixed;
+            top: 20px;
+            padding: 15px 30px;
+            border-radius: 8px;
+            background: var(--card-bg);
+            border-left: 4px solid var(--primary-color);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+            display: none;
+            z-index: 1000;
+            animation: slideIn 0.3s ease-out;
+        }
+
+        @keyframes slideIn {
+            from { transform: translateX(100%); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
+    </style>
+</head>
+<body>
+    <div class="bg-glow"></div>
+    
+    <div class="auth-container fade-in">
+        <div class="auth-header">
+            <span class="auth-logo">🛡️</span>
+            <div class="auth-title">ADMIN PANEL</div>
+        </div>
+
+        <div class="tab-group">
+            <div class="tab active" onclick="switchTab('login')">登录</div>
+            <div class="tab" onclick="switchTab('register')">注册</div>
+        </div>
+
+        <!-- 登录表单 -->
+        <form id="loginForm" class="active" onsubmit="handleAuth(event, 'login')">
+            <div class="form-group">
+                <label>管理员账号</label>
+                <input type="text" id="loginUser" placeholder="请输入账号" required>
+            </div>
+            <div class="form-group">
+                <label>访问密钥</label>
+                <input type="password" id="loginPass" placeholder="请输入密码" required>
+            </div>
+            <div style="text-align: right; margin-bottom: 20px; margin-top: -10px;">
+                <a href="javascript:void(0)" onclick="showFindPwd()" style="color: var(--primary-color); font-size: 13px; text-decoration: none;">忘记密码？</a>
+            </div>
+            <button type="submit" class="btn-auth">进入管理系统</button>
+        </form>
+
+        <!-- 找回密码表单 (弹窗形式) -->
+        <div id="findPwdModal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.8); z-index:1000; justify-content:center; align-items:center;">
+            <div class="auth-container" style="width:350px; border: 2px solid var(--primary-color);">
+                <div class="auth-header">
+                    <div class="auth-title" id="findPwdTitle">找回密钥</div>
+                </div>
+                <div class="form-group">
+                    <label id="findUserLabel">账号</label>
+                    <input type="text" id="findUser" placeholder="请输入要找回的账号">
+                </div>
+                <div class="form-group">
+                    <label id="findCodeLabel">系统授权码</label>
+                    <input type="password" id="findAuthCode" placeholder="请输入授权码以验证身份">
+                </div>
+                <div class="form-group">
+                    <label id="newPassLabel">新密钥</label>
+                    <input type="password" id="newPass" placeholder="请输入新密码">
+                </div>
+                <button class="btn-auth" onclick="handleFindPwd()" id="btnReset">重置并保存</button>
+                <button class="btn-auth" style="background:transparent; border:1px solid #666; margin-top:10px;" onclick="hideFindPwd()" id="btnCancelReset">取消</button>
+            </div>
+        </div>
+
+        <!-- 注册表单 -->
+        <form id="registerForm" onsubmit="handleAuth(event, 'register')">
+            <div class="form-group">
+                <label>创建账号</label>
+                <input type="text" id="regUser" placeholder="由字母和数字组成" required>
+            </div>
+            <div class="form-group">
+                <label>设置密钥</label>
+                <input type="password" id="regPass" placeholder="至少 6 位字符" required>
+            </div>
+            <div class="form-group">
+                <label>管理员授权码</label>
+                <input type="password" id="regCode" placeholder="请输入系统授权码" required>
+            </div>
+            <button type="submit" class="btn-auth">创建管理员账户</button>
+        </form>
+
+        <div class="auth-footer">
+            <p>© 2025 GAME CENTER | <a href="index.html">返回首页</a></p>
+        </div>
+    </div>
+
+    <div id="message" class="message"></div>
+
+    <script>
+        const i18n = {
+            zh: {
+                title: "ADMIN PANEL",
+                login: "登录",
+                register: "注册",
+                userLabel: "管理员账号",
+                passLabel: "访问密钥",
+                regUserLabel: "创建账号",
+                regPassLabel: "设置密钥",
+                regCodeLabel: "管理员授权码",
+                btnEnter: "进入管理系统",
+                btnCreate: "创建管理员账户",
+                backHome: "返回首页",
+                authCodeError: "无效的授权码！",
+                userExist: "该账号已存在！",
+                regSuccess: "管理员账号创建成功！请登录",
+                loginSuccess: "登录成功！正在进入管理后台...",
+                loginError: "账号或密码错误！",
+                findPwdTitle: "找回密钥",
+                findUserLabel: "账号",
+                findCodeLabel: "系统授权码",
+                newPassLabel: "新密钥",
+                btnReset: "重置并保存",
+                btnCancel: "取消",
+                resetSuccess: "密码已重置！请使用新密码登录",
+                resetError: "授权码错误或账号不存在！",
+                forgotPwd: "忘记密码？"
+            },
+            en: {
+                title: "ADMIN PANEL",
+                login: "Login",
+                register: "Register",
+                userLabel: "Admin Username",
+                passLabel: "Access Key",
+                regUserLabel: "Create Username",
+                regPassLabel: "Set Key",
+                regCodeLabel: "Auth Code",
+                btnEnter: "Enter Admin System",
+                btnCreate: "Create Admin Account",
+                backHome: "Back to Home",
+                authCodeError: "Invalid Auth Code!",
+                userExist: "Account already exists!",
+                regSuccess: "Admin account created! Please login",
+                loginSuccess: "Success! Entering dashboard...",
+                loginError: "Invalid username or password!",
+                findPwdTitle: "Reset Key",
+                findUserLabel: "Username",
+                findCodeLabel: "Auth Code",
+                newPassLabel: "New Key",
+                btnReset: "Reset & Save",
+                btnCancel: "Cancel",
+                resetSuccess: "Password reset success! Please login",
+                resetError: "Invalid code or user not found!",
+                forgotPwd: "Forgot Password?"
+            },
+            jp: {
+                title: "管理者パネル",
+                login: "ログイン",
+                register: "新規登録",
+                userLabel: "管理者ID",
+                passLabel: "アクセスキー",
+                regUserLabel: "ID作成",
+                regPassLabel: "キー設定",
+                regCodeLabel: "認証コード",
+                btnEnter: "システムに入る",
+                btnCreate: "アカウント作成",
+                backHome: "ホームに戻る",
+                authCodeError: "無効な認証コードです！",
+                userExist: "このアカウントは既に存在します！",
+                regSuccess: "アカウントを作成しました！ログインしてください",
+                loginSuccess: "ログイン成功！ダッシュボードへ...",
+                loginError: "IDまたはパスワードが正しくありません！",
+                findPwdTitle: "キーリセット",
+                findUserLabel: "ID",
+                findCodeLabel: "認証コード",
+                newPassLabel: "新しいキー",
+                btnReset: "リセット",
+                btnCancel: "キャンセル",
+                resetSuccess: "リセット完了！ログインしてください",
+                resetError: "認証コードが違うか、IDが存在しません",
+                forgotPwd: "パスワードを忘れた場合"
+            }
+        };
+
+        function initAuthPage() {
+            const savedSettings = JSON.parse(localStorage.getItem('gameCenterSettings')) || { language: 'zh', darkMode: true };
+            const lang = savedSettings.language || 'zh';
+            const dict = i18n[lang];
+
+            // 应用语言
+            document.querySelector('.auth-title').textContent = dict.title;
+            document.querySelectorAll('.tab')[0].textContent = dict.login;
+            document.querySelectorAll('.tab')[1].textContent = dict.register;
+            
+            document.querySelectorAll('label')[0].textContent = dict.userLabel;
+            document.querySelectorAll('label')[1].textContent = dict.passLabel;
+            document.querySelectorAll('label')[2].textContent = dict.regUserLabel;
+            document.querySelectorAll('label')[3].textContent = dict.regPassLabel;
+            document.querySelectorAll('label')[4].textContent = dict.regCodeLabel;
+
+            document.querySelectorAll('.btn-auth')[0].textContent = dict.btnEnter;
+            document.querySelectorAll('.btn-auth')[1].textContent = dict.btnCreate;
+            
+            // 找回密码语言应用
+            document.querySelector('a[onclick="showFindPwd()"]').textContent = dict.forgotPwd;
+            document.getElementById('findPwdTitle').textContent = dict.findPwdTitle;
+            document.getElementById('findUserLabel').textContent = dict.findUserLabel;
+            document.getElementById('findCodeLabel').textContent = dict.findCodeLabel;
+            document.getElementById('newPassLabel').textContent = dict.newPassLabel;
+            document.getElementById('btnReset').textContent = dict.btnReset;
+            document.getElementById('btnCancelReset').textContent = dict.btnCancel;
+
+            const footerText = `© 2025 GAME CENTER`;
+            document.querySelector('.auth-footer').innerHTML = footerText;
+
+            // 应用主题
+            if (!savedSettings.darkMode) {
+                document.body.style.background = 'linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%)';
+                document.querySelector('.auth-container').style.background = 'rgba(255, 255, 255, 0.9)';
+                document.querySelector('.auth-container').style.borderColor = '#4CAF50';
+                document.body.style.color = '#333';
+            }
+        }
+
+        window.onload = () => {
+            initAuthPage();
+            if (!localStorage.getItem('gameAdmins')) {
+                localStorage.setItem('gameAdmins', JSON.stringify({ 'admin': 'admin123' }));
+            }
+        };
+
+        function switchTab(type) {
+            const tabs = document.querySelectorAll('.tab');
+            const forms = [document.getElementById('loginForm'), document.getElementById('registerForm')];
+            
+            tabs.forEach(t => t.classList.remove('active'));
+            forms.forEach(f => f.classList.remove('active'));
+
+            if (type === 'login') {
+                tabs[0].classList.add('active');
+                forms[0].classList.add('active');
+            } else {
+                tabs[1].classList.add('active');
+                forms[1].classList.add('active');
+            }
+        }
+
+        function showMessage(text, isError = false) {
+            const msg = document.getElementById('message');
+            msg.textContent = text;
+            msg.style.display = 'block';
+            msg.style.borderLeftColor = isError ? '#ff4b2b' : '#4CAF50';
+            
+            setTimeout(() => {
+                msg.style.display = 'none';
+            }, 3000);
+        }
+
+        function showFindPwd() {
+            document.getElementById('findPwdModal').style.display = 'flex';
+        }
+
+        function hideFindPwd() {
+            document.getElementById('findPwdModal').style.display = 'none';
+        }
+
+        function handleFindPwd() {
+            const user = document.getElementById('findUser').value.trim();
+            const code = document.getElementById('findAuthCode').value.trim();
+            const newPass = document.getElementById('newPass').value.trim();
+            
+            const savedSettings = JSON.parse(localStorage.getItem('gameCenterSettings')) || { language: 'zh' };
+            const dict = i18n[savedSettings.language || 'zh'];
+
+            if (!user || !code || !newPass) {
+                showMessage("请填写所有字段", true);
+                return;
+            }
+
+            if (code !== '666') {
+                showMessage(dict.authCodeError, true);
+                return;
+            }
+
+            const admins = JSON.parse(localStorage.getItem('gameAdmins')) || {};
+            if (!admins[user]) {
+                showMessage(dict.resetError, true);
+                return;
+            }
+
+            admins[user] = newPass;
+            localStorage.setItem('gameAdmins', JSON.stringify(admins));
+            showMessage(dict.resetSuccess);
+            hideFindPwd();
+        }
+
+        function handleAuth(event, type) {
+            event.preventDefault();
+            
+            if (type === 'register') {
+                const user = document.getElementById('regUser').value.trim();
+                const pass = document.getElementById('regPass').value.trim();
+                const code = document.getElementById('regCode').value.trim();
+
+                const savedSettings = JSON.parse(localStorage.getItem('gameCenterSettings')) || { language: 'zh' };
+                const dict = i18n[savedSettings.language || 'zh'];
+
+                if (code !== '666') {
+                    showMessage(dict.authCodeError, true);
+                    return;
+                }
+
+                const admins = JSON.parse(localStorage.getItem('gameAdmins')) || {};
+                if (admins[user]) {
+                    showMessage(dict.userExist, true);
+                    return;
+                }
+
+                admins[user] = pass;
+                localStorage.setItem('gameAdmins', JSON.stringify(admins));
+                showMessage(dict.regSuccess);
+                switchTab('login');
+            } else {
+                const user = document.getElementById('loginUser').value;
+                const pass = document.getElementById('loginPass').value;
+                const admins = JSON.parse(localStorage.getItem('gameAdmins')) || { 'admin': 'admin123' };
+                
+                const savedSettings = JSON.parse(localStorage.getItem('gameCenterSettings')) || { language: 'zh' };
+                const dict = i18n[savedSettings.language || 'zh'];
+
+                if (admins[user] && admins[user] === pass) {
+                    showMessage(dict.loginSuccess);
+                    sessionStorage.setItem('isAdminLoggedIn', 'true');
+                    sessionStorage.setItem('currentAdmin', user);
+                    localStorage.setItem('lastAdminUser', user); // 持久化存储管理员名
+                    setTimeout(() => {
+                        window.location.href = 'index.html';
+                    }, 1500);
+                } else {
+                    showMessage(dict.loginError, true);
+                }
+            }
+        }
+
+        // 预设一个演示账号
+        if (!localStorage.getItem('gameAdmins')) {
+            localStorage.setItem('gameAdmins', JSON.stringify({ 'admin': 'admin123' }));
+        }
+    </script>
+</body>
+</html>

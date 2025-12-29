@@ -1,0 +1,1086 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>游戏设置 - GAME CENTER</title>
+    <style>
+        body {
+            font-family: 'Microsoft YaHei', Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            color: #fff;
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        /* 复用主页导航栏样式 */
+        .game-navbar {
+            background: rgba(20, 20, 20, 0.95);
+            padding: 0 50px;
+            height: 70px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.4);
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            z-index: 1000;
+            border-bottom: 3px solid #4CAF50;
+            backdrop-filter: blur(10px);
+        }
+        .nav-logo {
+            color: #4CAF50;
+            font-size: 24px;
+            font-weight: 900;
+            text-decoration: none;
+            letter-spacing: 2px;
+        }
+        .nav-links {
+            display: flex;
+            gap: 30px;
+            list-style: none;
+        }
+        .nav-link {
+            text-decoration: none;
+            color: #ddd;
+            font-weight: 600;
+            transition: 0.3s;
+        }
+        .nav-link:hover, .nav-link.active {
+            color: #4CAF50;
+        }
+
+        /* 移动端菜单按钮 */
+        .menu-toggle {
+            display: none;
+            flex-direction: column;
+            gap: 5px;
+            cursor: pointer;
+            padding: 10px;
+            z-index: 1001;
+        }
+        .menu-toggle span {
+            display: block;
+            width: 25px;
+            height: 3px;
+            background: #4CAF50;
+            border-radius: 3px;
+            transition: 0.3s;
+        }
+
+        .nav-user {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            color: #fff;
+        }
+        .user-avatar {
+            width: 45px;
+            height: 45px;
+            border-radius: 50%;
+            border: 2px solid #4CAF50;
+            background: #333;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+            box-shadow: 0 0 10px rgba(76, 175, 80, 0.5);
+            cursor: pointer;
+            transition: 0.3s;
+        }
+        .user-avatar:hover {
+            transform: scale(1.1);
+            border-color: #81C784;
+        }
+        .user-avatar img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        .exclusive-channel {
+            background: linear-gradient(45deg, #ff4081, #7c4dff);
+            color: white;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 13px;
+            font-weight: bold;
+            letter-spacing: 1px;
+            box-shadow: 0 0 10px rgba(255, 64, 129, 0.5);
+            animation: pulseChannel 2s infinite;
+        }
+        @keyframes pulseChannel {
+            0% { transform: scale(1); opacity: 1; }
+            50% { transform: scale(1.05); opacity: 0.8; }
+            100% { transform: scale(1); opacity: 1; }
+        }
+
+        /* 浅色模式适配 */
+        body.light-mode {
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            color: #333;
+        }
+        body.light-mode .game-navbar {
+            background: rgba(255, 255, 255, 0.95);
+            border-bottom-color: #4CAF50;
+        }
+        body.light-mode .nav-link { color: #555; }
+        body.light-mode .settings-container {
+            background: rgba(255, 255, 255, 0.8);
+            border-color: rgba(0,0,0,0.1);
+            color: #333;
+        }
+        body.light-mode .setting-item { border-bottom-color: rgba(0,0,0,0.05); }
+        body.light-mode .setting-info p { color: #666; }
+        body.light-mode select, body.light-mode input[type="text"] {
+            background: #fff;
+            border-color: #ddd;
+            color: #333;
+        }
+        body.light-mode .avatar-upload-container { background: rgba(0,0,0,0.02); }
+        body.light-mode .btn-action {
+            background: #fff;
+            border-color: #ddd;
+            color: #666;
+        }
+        body.light-mode .btn-action:hover {
+            background: #f8f8f8;
+            border-color: #4CAF50;
+            color: #4CAF50;
+        }
+
+        .settings-container {
+            max-width: 800px;
+            margin: 100px auto 50px;
+            padding: 30px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 20px;
+            backdrop-filter: blur(15px);
+            border: 1px solid rgba(76, 175, 80, 0.2);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+            animation: settingsEnter 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        @keyframes settingsEnter {
+            from { opacity: 0; transform: translateY(30px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .settings-container.page-exit {
+            animation: pageExit 0.6s cubic-bezier(0.4, 0, 0.2, 1) forwards !important;
+        }
+
+        @keyframes pageExit {
+            from { opacity: 1; transform: translateY(0); filter: blur(0); }
+            to { opacity: 0; transform: translateY(-20px); filter: blur(5px); }
+        }
+
+        h1 {
+            color: #4CAF50;
+            border-bottom: 2px solid rgba(76, 175, 80, 0.3);
+            padding-bottom: 15px;
+            margin-bottom: 30px;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .settings-section {
+            margin-bottom: 40px;
+            animation: sectionFade 0.5s ease-out backwards;
+        }
+        .settings-section:nth-child(2) { animation-delay: 0.1s; }
+        .settings-section:nth-child(3) { animation-delay: 0.2s; }
+
+        @keyframes sectionFade {
+            from { opacity: 0; transform: translateX(-20px); }
+            to { opacity: 1; transform: translateX(0); }
+        }
+
+        h2 {
+            font-size: 1.2em;
+            color: #81C784;
+            margin-bottom: 20px;
+        }
+
+        .setting-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 15px 0;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+        }
+
+        .setting-info h3 {
+            margin: 0;
+            font-size: 16px;
+            font-weight: 600;
+        }
+        .setting-info p {
+            margin: 5px 0 0;
+            font-size: 13px;
+            color: #aaa;
+        }
+
+        /* 开关样式 */
+        .switch {
+            position: relative;
+            display: inline-block;
+            width: 50px;
+            height: 24px;
+        }
+        .switch input { opacity: 0; width: 0; height: 0; }
+        .slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background-color: #333;
+            transition: .4s;
+            border-radius: 24px;
+        }
+        .slider:before {
+            position: absolute;
+            content: "";
+            height: 18px; width: 18px;
+            left: 3px; bottom: 3px;
+            background-color: white;
+            transition: .4s;
+            border-radius: 50%;
+        }
+        input:checked + .slider { background-color: #4CAF50; }
+        input:checked + .slider:before { transform: translateX(26px); }
+
+        /* 移动端适配 */
+        @media (max-width: 768px) {
+            .game-navbar {
+                padding: 0 20px;
+            }
+            .menu-toggle {
+                display: flex;
+            }
+            .nav-links {
+                position: fixed;
+                top: 70px;
+                left: 0;
+                right: 0;
+                background: rgba(20, 20, 20, 0.98);
+                flex-direction: column;
+                gap: 0;
+                padding: 20px 0;
+                border-bottom: 2px solid #4CAF50;
+                transform: translateY(-150%);
+                transition: 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+                box-shadow: 0 10px 20px rgba(0,0,0,0.5);
+            }
+            .nav-links.active {
+                transform: translateY(0);
+            }
+            .nav-link {
+                padding: 15px 30px;
+                display: block;
+            }
+            .nav-user {
+                gap: 10px;
+            }
+            .exclusive-channel {
+                display: none;
+            }
+            .settings-container {
+                margin: 90px 15px 30px;
+                padding: 20px;
+            }
+            h1 {
+                font-size: 1.5em;
+            }
+            .setting-item {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 15px;
+            }
+            .setting-info {
+                width: 100%;
+            }
+            select, input[type="text"], .btn-save {
+                width: 100%;
+                box-sizing: border-box;
+            }
+            .avatar-upload-container {
+                flex-direction: column;
+                text-align: center;
+            }
+        }
+
+        /* 下拉选择和输入框 */
+        select, input[type="text"] {
+            background: rgba(0,0,0,0.3);
+            border: 1px solid #444;
+            color: white;
+            padding: 8px 12px;
+            border-radius: 6px;
+            outline: none;
+        }
+        select:focus { border-color: #4CAF50; }
+
+        .btn-save {
+            background: linear-gradient(45deg, #4CAF50, #45a049);
+            color: white;
+            border: none;
+            padding: 12px 40px;
+            border-radius: 8px;
+            font-weight: bold;
+            cursor: pointer;
+            display: block;
+            margin: 40px auto 0;
+            transition: 0.3s;
+            box-shadow: 0 4px 15px rgba(76, 175, 80, 0.3);
+        }
+        .btn-save:hover {
+            transform: scale(1.05);
+            box-shadow: 0 6px 20px rgba(76, 175, 80, 0.5);
+        }
+
+        /* 成功提示增强 */
+        /* 安全等级进度条 */
+        .security-level-container {
+            margin-top: 10px;
+            background: rgba(255, 255, 255, 0.1);
+            height: 6px;
+            border-radius: 3px;
+            overflow: hidden;
+            width: 100px;
+        }
+        .security-level-bar {
+            height: 100%;
+            background: linear-gradient(90deg, #ff4b2b, #ff416c);
+            width: 35%;
+            transition: width 1s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .security-level-bar.high {
+            background: linear-gradient(90deg, #4CAF50, #81C784);
+            width: 85%;
+        }
+
+        .btn-action {
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            color: #ddd;
+            padding: 6px 15px;
+            border-radius: 4px;
+            font-size: 13px;
+            cursor: pointer;
+            transition: 0.3s;
+        }
+        .btn-action:hover {
+            background: rgba(255, 255, 255, 0.2);
+            border-color: #4CAF50;
+            color: #fff;
+        }
+
+        #toast {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(20, 20, 20, 0.95);
+            color: white;
+            padding: 30px 50px;
+            border-radius: 15px;
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            gap: 15px;
+            z-index: 2000;
+            border: 2px solid #4CAF50;
+            box-shadow: 0 0 30px rgba(76, 175, 80, 0.4);
+            backdrop-filter: blur(10px);
+            text-align: center;
+        }
+
+        .loader {
+            width: 40px;
+            height: 40px;
+            border: 4px solid #333;
+            border-top: 4px solid #4CAF50;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .countdown-text {
+            color: #4CAF50;
+            font-weight: bold;
+            font-size: 1.2em;
+        }
+
+        /* 头像上传样式 */
+        .avatar-upload-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 15px;
+            margin-bottom: 25px;
+            padding: 20px;
+            background: rgba(255, 255, 255, 0.03);
+            border-radius: 15px;
+        }
+        .preview-avatar-large {
+            width: 100px;
+            height: 100px;
+            border-radius: 50%;
+            border: 3px solid #4CAF50;
+            object-fit: cover;
+            box-shadow: 0 0 20px rgba(76, 175, 80, 0.3);
+        }
+        .upload-hint {
+            font-size: 12px;
+            color: #888;
+        }
+    </style>
+</head>
+<body>
+    <nav class="game-navbar">
+        <a href="index.html" class="nav-logo">🎮 GC</a>
+        <div class="menu-toggle" onclick="toggleMenu()">
+            <span></span>
+            <span></span>
+            <span></span>
+        </div>
+        <ul class="nav-links" id="navLinks">
+            <li><a href="index.html" class="nav-link">🏠 首页</a></li>
+            <li><a href="game_list.html" class="nav-link">🎮 游戏大全</a></li>
+            <li><a href="admin_dashboard.html" class="nav-link">🛡️ 管理面板</a></li>
+            <li><a href="settings.html" class="nav-link active">⚙️ 设置</a></li>
+        </ul>
+        <div class="nav-user">
+            <span class="exclusive-channel">💎 专属通道</span>
+            <div class="user-avatar" onclick="location.hash='account-section'">
+                <img src="./avatar.jpg" id="navAvatar" alt="Avatar" onerror="this.src='https://img.icons8.com/color/96/girl-profile.png'">
+            </div>
+        </div>
+    </nav>
+
+    <div class="settings-container">
+        <h1>⚙️ 系统设置</h1>
+
+        <div class="settings-section">
+            <h2>🖥️ 显示设置</h2>
+            <div class="setting-item">
+                <div class="setting-info">
+                    <h3>深色模式</h3>
+                    <p>切换系统界面的明暗主题</p>
+                </div>
+                <label class="switch">
+                    <input type="checkbox" id="darkModeToggle" checked>
+                    <span class="slider"></span>
+                </label>
+            </div>
+            <div class="setting-item">
+                <div class="setting-info">
+                    <h3>背景装饰动画</h3>
+                    <p>启用首页的漂浮元素效果</p>
+                </div>
+                <label class="switch">
+                    <input type="checkbox" id="bgAnimToggle" checked>
+                    <span class="slider"></span>
+                </label>
+            </div>
+            <div class="setting-item">
+                <div class="setting-info">
+                    <h3>界面语言</h3>
+                    <p>更改游戏平台的显示语言</p>
+                </div>
+                <select id="languageSelect">
+                    <option value="zh">简体中文</option>
+                    <option value="en">English</option>
+                    <option value="jp">日本語</option>
+                </select>
+            </div>
+        </div>
+
+        <div class="settings-section">
+            <h2>🔔 通知与隐私</h2>
+            <div class="setting-item">
+                <div class="setting-info">
+                    <h3>查询结果推送</h3>
+                    <p>申请进度更新时发送通知</p>
+                </div>
+                <label class="switch">
+                    <input type="checkbox" id="pushNotifyToggle">
+                    <span class="slider"></span>
+                </label>
+            </div>
+        </div>
+
+        <div class="settings-section" id="account-section">
+            <h2 id="secSecurityTitle">🛡️ 账号安全</h2>
+            
+            <div class="avatar-upload-container">
+                <img src="./avatar.jpg" id="previewAvatar" class="preview-avatar-large" alt="Avatar Preview">
+                <button class="btn-action" onclick="document.getElementById('avatarInput').click()">更换头像</button>
+                <input type="file" id="avatarInput" hidden accept="image/*" onchange="previewFile()">
+                <p class="upload-hint">支持 jpg, png 格式，建议尺寸 200x200</p>
+            </div>
+
+            <div class="setting-item">
+                <div class="setting-info">
+                    <h3 id="itemUser">当前用户</h3>
+                    <p id="itemUserDesc">修改您的显示昵称</p>
+                </div>
+                <input type="text" id="userNameInput" value="小美">
+            </div>
+            <div class="setting-item">
+                <div class="setting-info">
+                    <h3 id="itemSecurityLevel">账号安全等级</h3>
+                    <p id="itemSecurityLevelDesc">建议开启双重验证提高安全性</p>
+                    <div class="security-level-container">
+                        <div class="security-level-bar" id="securityBar"></div>
+                    </div>
+                </div>
+                <span id="securityStatus" style="color: #ff4b2b; font-size: 13px; font-weight: bold;">中等</span>
+            </div>
+            <div class="setting-item">
+                <div class="setting-info">
+                    <h3 id="item2FA">登录保护 (2FA)</h3>
+                    <p id="item2FADesc">新设备登录时需要验证码</p>
+                </div>
+                <label class="switch">
+                    <input type="checkbox" id="twoFAToggle">
+                    <span class="slider"></span>
+                </label>
+            </div>
+            <div class="setting-item">
+                <div class="setting-info">
+                    <h3 id="itemPassword">登录密码</h3>
+                    <p id="itemPasswordDesc">上次修改于 3 个月前</p>
+                </div>
+                <button class="btn-action" onclick="showChangePwd()" id="btnChangePwd">修改密码</button>
+            </div>
+        </div>
+
+        <!-- 修改密码弹窗 -->
+        <div id="changePwdModal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.8); z-index:2000; justify-content:center; align-items:center;">
+            <div class="settings-container" style="width:350px; margin:0; border: 1px solid #4CAF50;">
+                <h2 style="margin-top:0;" id="modalPwdTitle">修改密钥</h2>
+                <div class="setting-item" style="flex-direction:column; align-items:flex-start; border:none;">
+                    <label style="font-size:13px; color:#aaa; margin-bottom:5px;" id="lblOldPwd">当前密钥</label>
+                    <input type="password" id="oldPwd" style="width:100%; box-sizing:border-box;" placeholder="请输入旧密码">
+                </div>
+                <div class="setting-item" style="flex-direction:column; align-items:flex-start; border:none;">
+                    <label style="font-size:13px; color:#aaa; margin-bottom:5px;" id="lblNewPwd">新密钥</label>
+                    <input type="password" id="newPwd" style="width:100%; box-sizing:border-box;" placeholder="至少 6 位字符">
+                </div>
+                <div class="setting-item" style="flex-direction:column; align-items:flex-start; border:none;">
+                    <label style="font-size:13px; color:#aaa; margin-bottom:5px;" id="lblConfirmPwd">确认新密钥</label>
+                    <input type="password" id="confirmNewPwd" style="width:100%; box-sizing:border-box;" placeholder="请再次输入新密码">
+                </div>
+                <div style="display:flex; gap:10px; margin-top:20px;">
+                    <button class="btn-save" style="flex:1; margin:0;" onclick="handleChangePwd()" id="btnSavePwd">保存新密钥</button>
+                    <button class="btn-save" style="flex:1; margin:0; background:#444;" onclick="hideChangePwd()" id="btnCancelPwd">取消</button>
+                </div>
+            </div>
+        </div>
+
+        <button class="btn-save" onclick="saveSettings()">保存更改</button>
+        <button class="btn-save" style="background: #333; margin-top: 15px;" onclick="handleLogout()" id="btnLogout">退出登录</button>
+    </div>
+
+    <div id="toast">
+        <div class="loader"></div>
+        <div style="font-size: 18px; font-weight: bold;">✅ 设置已保存！</div>
+        <div class="countdown-text">正在前往首页... <span id="seconds">1.5</span>s</div>
+    </div>
+
+    <script>
+        // 移动端菜单切换
+        function toggleMenu() {
+            const navLinks = document.getElementById('navLinks');
+            navLinks.classList.toggle('active');
+            
+            const spans = document.querySelectorAll('.menu-toggle span');
+            if (navLinks.classList.contains('active')) {
+                spans[0].style.transform = 'rotate(45deg) translate(5px, 6px)';
+                spans[1].style.opacity = '0';
+                spans[2].style.transform = 'rotate(-45deg) translate(5px, -7px)';
+            } else {
+                spans[0].style.transform = 'none';
+                spans[1].style.opacity = '1';
+                spans[2].style.transform = 'none';
+            }
+        }
+
+        // 登录状态拦截
+        function checkAuth() {
+            if (sessionStorage.getItem('isAdminLoggedIn') !== 'true') {
+                window.location.href = 'admin_auth.html';
+            }
+        }
+        checkAuth();
+
+        const i18n = {
+            zh: {
+                navHome: "🏠 首页",
+                navGames: "🎮 游戏大全",
+                navAdmin: "🛡️ 管理面板",
+                navSettings: "⚙️ 设置",
+                title: "⚙️ 系统设置",
+                sectionDisplay: "🖥️ 显示设置",
+                itemDark: "深色模式",
+                itemDarkDesc: "切换系统界面的明暗主题",
+                itemAnim: "背景装饰动画",
+                itemAnimDesc: "启用首页的漂浮元素效果",
+                itemLang: "界面语言",
+                itemLangDesc: "更改游戏平台的显示语言",
+                sectionNotify: "🔔 通知与隐私",
+                itemPush: "查询结果推送",
+                itemPushDesc: "申请进度更新时发送通知",
+                sectionSecurity: "🛡️ 账号安全",
+                itemUser: "当前用户",
+                itemUserDesc: "修改您的显示昵称",
+                itemSecurityLevel: "账号安全等级",
+                itemSecurityLevelDesc: "建议开启双重验证提高安全性",
+                item2FA: "登录保护 (2FA)",
+                item2FADesc: "新设备登录时需要验证码",
+                itemPassword: "登录密码",
+                itemPasswordDesc: "上次修改于 3 个月前",
+                btnChangePwd: "修改密码",
+                statusMedium: "中等",
+                statusHigh: "安全",
+                btnSave: "保存更改",
+                btnLogout: "退出登录",
+                toast: "✅ 设置已保存！",
+                countdown: "正在前往首页...",
+                sectionAdmin: "🛡️ 管理员面板",
+                itemAdminStats: "数据统计",
+                itemAdminStatsDesc: "查看全站申请数据概况",
+                itemAdminClear: "全局清理",
+                itemAdminClearDesc: "清空所有用户的历史记录",
+                btnAdminView: "查看数据",
+                btnAdminClear: "立即清理",
+                modalPwdTitle: "修改密钥",
+                lblOldPwd: "当前密钥",
+                lblNewPwd: "新密钥",
+                lblConfirmPwd: "确认新密钥",
+                btnSavePwd: "保存新密钥",
+                btnCancelPwd: "取消",
+                pwdErrorOld: "当前密钥错误！",
+                pwdErrorMatch: "两次输入的新密钥不一致！",
+                pwdErrorShort: "新密钥至少需要 6 位！",
+                pwdSuccess: "密钥修改成功！请重新登录",
+                pwdFillAll: "请填写所有字段"
+            },
+            en: {
+                navHome: "🏠 Home",
+                navGames: "🎮 Games",
+                navAdmin: "🛡️ Admin",
+                navSettings: "⚙️ Settings",
+                title: "⚙️ Settings",
+                sectionDisplay: "🖥️ Display",
+                itemDark: "Dark Mode",
+                itemDarkDesc: "Toggle light/dark theme",
+                itemAnim: "Background Animation",
+                itemAnimDesc: "Enable floating elements on home",
+                itemLang: "Language",
+                itemLangDesc: "Change platform language",
+                sectionNotify: "🔔 Notifications",
+                itemPush: "Push Results",
+                itemPushDesc: "Notify on progress updates",
+                sectionSecurity: "🛡️ Security",
+                itemUser: "Username",
+                itemUserDesc: "Change your display name",
+                itemSecurityLevel: "Security Level",
+                itemSecurityLevelDesc: "2FA is recommended for better security",
+                item2FA: "Two-Factor Auth (2FA)",
+                item2FADesc: "Verification code for new devices",
+                itemPassword: "Login Password",
+                itemPasswordDesc: "Last changed 3 months ago",
+                btnChangePwd: "Change",
+                statusMedium: "Medium",
+                statusHigh: "Secure",
+                btnSave: "Save Changes",
+                btnLogout: "Logout",
+                toast: "✅ Settings Saved!",
+                countdown: "Redirecting to home...",
+                sectionAdmin: "🛡️ Admin Panel",
+                itemAdminStats: "Statistics",
+                itemAdminStatsDesc: "View overall application data",
+                itemAdminClear: "Global Clear",
+                itemAdminClearDesc: "Clear history for all users",
+                btnAdminView: "View",
+                btnAdminClear: "Clear All",
+                modalPwdTitle: "Change Password",
+                lblOldPwd: "Old Password",
+                lblNewPwd: "New Password",
+                lblConfirmPwd: "Confirm New Password",
+                btnSavePwd: "Save Password",
+                btnCancelPwd: "Cancel",
+                pwdErrorOld: "Incorrect old password!",
+                pwdErrorMatch: "Passwords do not match!",
+                pwdErrorShort: "Password must be at least 6 characters!",
+                pwdSuccess: "Password updated! Please login again",
+                pwdFillAll: "Please fill all fields"
+            },
+            jp: {
+                navHome: "🏠 ホーム",
+                navGames: "🎮 ゲーム一覧",
+                navAdmin: "🛡️ 管理パネル",
+                navSettings: "⚙️ 設定",
+                title: "⚙️ システム設定",
+                sectionDisplay: "🖥️ 表示設定",
+                itemDark: "ダークモード",
+                itemDarkDesc: "ライト/ダークテーマの切り替え",
+                itemAnim: "背景アニメーション",
+                itemAnimDesc: "ホームの浮遊要素を有効にする",
+                itemLang: "表示言語",
+                itemLangDesc: "プラットフォームの言語を変更",
+                sectionNotify: "🔔 通知とプライバシー",
+                itemPush: "结果プッシュ通知",
+                itemPushDesc: "進捗更新時に通知を受け取る",
+                sectionSecurity: "🛡️ アカウントセキュリティ",
+                itemUser: "現在のユーザー",
+                itemUserDesc: "表示名を変更する",
+                itemSecurityLevel: "セキュリティレベル",
+                itemSecurityLevelDesc: "二段階認証を有効にすることをお勧めします",
+                item2FA: "ログイン保護 (2FA)",
+                item2FADesc: "新しいデバイスでのログインに認証コードが必要",
+                itemPassword: "ログインパスワード",
+                itemPasswordDesc: "3ヶ月前に変更されました",
+                btnChangePwd: "変更する",
+                statusMedium: "普通",
+                statusHigh: "安全",
+                btnSave: "変更を保存",
+                btnLogout: "ログアウト",
+                toast: "✅ 設定を保存しました！",
+                countdown: "ホームへ移動中...",
+                sectionAdmin: "🛡️ 管理者パネル",
+                itemAdminStats: "統計データ",
+                itemAdminStatsDesc: "サイト全体の申請状況を確認",
+                itemAdminClear: "全削除",
+                itemAdminClearDesc: "全ユーザーの履歴を削除",
+                btnAdminView: "表示",
+                btnAdminClear: "削除実行",
+                modalPwdTitle: "パスワード変更",
+                lblOldPwd: "現在のパスワード",
+                lblNewPwd: "新しいパスワード",
+                lblConfirmPwd: "パスワードの確認",
+                btnSavePwd: "保存する",
+                btnCancelPwd: "キャンセル",
+                pwdErrorOld: "現在のパスワードが正しくありません",
+                pwdErrorMatch: "新しいパスワードが一致しません",
+                pwdErrorShort: "パスワードは6文字以上必要です",
+                pwdSuccess: "変更しました！再度ログインしてください",
+                pwdFillAll: "すべての項目を入力してください"
+            }
+        };
+
+        // 默认设置
+        const defaultSettings = {
+            darkMode: true,
+            bgAnim: true,
+            userName: '小美',
+            language: 'zh',
+            pushNotify: true,
+            hideHistory: false,
+            twoFA: false
+        };
+
+        // 初始化加载设置
+        function initSettings() {
+            try {
+                const savedRaw = localStorage.getItem('gameCenterSettings');
+                const saved = savedRaw ? JSON.parse(savedRaw) : defaultSettings;
+                
+                // 确保 DOM 状态与数据同步
+                const elements = {
+                    'darkModeToggle': { prop: 'checked', value: saved.darkMode !== false },
+                    'bgAnimToggle': { prop: 'checked', value: saved.bgAnim !== false },
+                    'userNameInput': { prop: 'value', value: saved.userName || defaultSettings.userName },
+                    'languageSelect': { prop: 'value', value: saved.language || defaultSettings.language },
+                    'pushNotifyToggle': { prop: 'checked', value: saved.pushNotify !== false },
+                    'twoFAToggle': { prop: 'checked', value: saved.twoFA === true }
+                };
+
+                for (const [id, config] of Object.entries(elements)) {
+                    const el = document.getElementById(id);
+                    if (el) el[config.prop] = config.value;
+                }
+                
+                if (saved.avatar) {
+                    const preview = document.getElementById('previewAvatar');
+                    const nav = document.getElementById('navAvatar');
+                    if (preview) preview.src = saved.avatar;
+                    if (nav) nav.src = saved.avatar;
+                }
+                
+                applySettings(saved);
+            } catch (err) {
+                console.error('Settings init error:', err);
+                applySettings(defaultSettings);
+            }
+        }
+
+        function applySettings(saved) {
+            try {
+                const lang = saved.language || 'zh';
+                const dict = i18n[lang] || i18n['zh'];
+
+                // 安全更新文本逻辑，防止因元素缺失导致崩溃
+                const safeSetText = (id, text) => {
+                    const el = document.getElementById(id);
+                    if (el) el.textContent = text;
+                };
+
+                // 应用主题 - 保持与 index.html 逻辑一致
+                const isDark = saved.darkMode !== false;
+                if (isDark) {
+                    document.body.classList.remove('light-mode');
+                } else {
+                    document.body.classList.add('light-mode');
+                }
+
+                // 更新导航头像和名称
+                const navAvatar = document.getElementById('navAvatar');
+                if (navAvatar && saved.avatar) navAvatar.src = saved.avatar;
+                
+                const previewAvatar = document.getElementById('previewAvatar');
+                if (previewAvatar && saved.avatar) previewAvatar.src = saved.avatar;
+
+                if (saved.userName) {
+                    const channel = document.querySelector('.exclusive-channel');
+                    if (channel) {
+                        const suffix = lang === 'zh' ? '专属' : (lang === 'jp' ? '専用' : 'Exclusive');
+                        channel.textContent = `💎 ${saved.userName} ${suffix}`;
+                    }
+                }
+
+                const navLinks = document.querySelectorAll('.nav-link');
+                const navTexts = [dict.navHome, dict.navGames, dict.navAdmin, dict.navSettings];
+                navLinks.forEach((link, i) => {
+                    if (link && navTexts[i]) link.textContent = navTexts[i];
+                });
+
+                const h1 = document.querySelector('h1');
+                if (h1) h1.textContent = dict.title;
+
+                const sections = document.querySelectorAll('h2');
+                if (sections[0]) sections[0].textContent = dict.sectionDisplay;
+                if (sections[1]) sections[1].textContent = dict.sectionNotify;
+                
+                safeSetText('secSecurityTitle', dict.sectionSecurity);
+                safeSetText('itemUser', dict.itemUser);
+                safeSetText('itemUserDesc', dict.itemUserDesc);
+                safeSetText('itemSecurityLevel', dict.itemSecurityLevel);
+                safeSetText('itemSecurityLevelDesc', dict.itemSecurityLevelDesc);
+                safeSetText('item2FA', dict.item2FA);
+                safeSetText('item2FADesc', dict.item2FADesc);
+                safeSetText('itemPassword', dict.itemPassword);
+                safeSetText('itemPasswordDesc', dict.itemPasswordDesc);
+                safeSetText('btnChangePwd', dict.btnChangePwd);
+
+                // 动态安全等级
+                const bar = document.getElementById('securityBar');
+                const status = document.getElementById('securityStatus');
+                if (bar && status) {
+                    if (saved.twoFA) {
+                        bar.classList.add('high');
+                        status.textContent = dict.statusHigh;
+                        status.style.color = '#4CAF50';
+                    } else {
+                        bar.classList.remove('high');
+                        status.textContent = dict.statusMedium;
+                        status.style.color = '#ff4b2b';
+                    }
+                }
+
+                // 翻译表单项
+                const itemTitles = document.querySelectorAll('.setting-info h3');
+                const itemDescs = document.querySelectorAll('.setting-info p');
+                const fieldTexts = [
+                    [dict.itemDark, dict.itemDarkDesc],
+                    [dict.itemAnim, dict.itemAnimDesc],
+                    [dict.itemLang, dict.itemLangDesc],
+                    [dict.itemPush, dict.itemPushDesc]
+                ];
+                
+                fieldTexts.forEach((texts, i) => {
+                    if (itemTitles[i]) itemTitles[i].textContent = texts[0];
+                    if (itemDescs[i]) itemDescs[i].textContent = texts[1];
+                });
+
+                // 翻译按钮
+                const saveBtn = document.querySelector('button[onclick="saveSettings()"]');
+                if (saveBtn) saveBtn.textContent = dict.btnSave;
+                
+                const logoutBtn = document.getElementById('btnLogout');
+                if (logoutBtn) logoutBtn.textContent = dict.btnLogout;
+                
+                // 翻译 Toast
+                const toast = document.getElementById('toast');
+                if (toast) {
+                    const toastTitle = toast.querySelector('div:nth-child(2)');
+                    if (toastTitle) toastTitle.textContent = dict.toast;
+                    const toastCountdown = toast.querySelector('.countdown-text');
+                    if (toastCountdown && toastCountdown.childNodes[0]) {
+                        toastCountdown.childNodes[0].textContent = dict.countdown;
+                    }
+                }
+
+                // 翻译修改密码弹窗
+                if (document.getElementById('modalPwdTitle')) {
+                    safeSetText('modalPwdTitle', dict.modalPwdTitle);
+                    safeSetText('lblOldPwd', dict.lblOldPwd);
+                    safeSetText('lblNewPwd', dict.lblNewPwd);
+                    safeSetText('lblConfirmPwd', dict.lblConfirmPwd);
+                    safeSetText('btnSavePwd', dict.btnSavePwd);
+                    safeSetText('btnCancelPwd', dict.btnCancelPwd);
+                    
+                    const oldPwd = document.getElementById('oldPwd');
+                    const newPwd = document.getElementById('newPwd');
+                    const confirmNewPwd = document.getElementById('confirmNewPwd');
+                    
+                    if (oldPwd) oldPwd.placeholder = lang === 'zh' ? '请输入旧密码' : (lang === 'jp' ? '現在のパスワード' : 'Enter old password');
+                    if (newPwd) newPwd.placeholder = lang === 'zh' ? '至少 6 位字符' : (lang === 'jp' ? '6文字以上' : 'Min 6 characters');
+                    if (confirmNewPwd) confirmNewPwd.placeholder = lang === 'zh' ? '请再次输入新密码' : (lang === 'jp' ? 'パスワードを再入力' : 'Confirm new password');
+                }
+            } catch (err) {
+                console.error('applySettings execution error:', err);
+            }
+        }
+
+        // 页面丝滑跳转逻辑
+        document.querySelectorAll('a').forEach(link => {
+            link.addEventListener('click', function(e) {
+                const href = this.getAttribute('href');
+                if (href && href !== '#' && !href.startsWith('http') && !href.includes('javascript:void(0)')) {
+                    e.preventDefault();
+                    const container = document.querySelector('.settings-container');
+                    if (container) {
+                        container.classList.add('page-exit');
+                        setTimeout(() => {
+                            window.location.href = href;
+                        }, 500);
+                    } else {
+                        window.location.href = href;
+                    }
+                }
+            });
+        });
+
+        function handleLogout() {
+            sessionStorage.removeItem('isAdminLoggedIn');
+            sessionStorage.removeItem('currentAdmin');
+            window.location.href = 'admin_auth.html';
+        }
+
+        function showChangePwd() {
+            document.getElementById('changePwdModal').style.display = 'flex';
+        }
+
+        function hideChangePwd() {
+            document.getElementById('changePwdModal').style.display = 'none';
+        }
+
+        function handleChangePwd() {
+            const oldPwd = document.getElementById('oldPwd').value;
+            const newPwd = document.getElementById('newPwd').value;
+            const confirmNewPwd = document.getElementById('confirmNewPwd').value;
+            
+            const lang = localStorage.getItem('gameCenterSettings') ? JSON.parse(localStorage.getItem('gameCenterSettings')).language : 'zh';
+            const dict = i18n[lang || 'zh'];
+
+            if (!oldPwd || !newPwd || !confirmNewPwd) {
+                alert(dict.pwdFillAll);
+                return;
+            }
+
+            if (newPwd.length < 6) {
+                alert(dict.pwdErrorShort);
+                return;
+            }
+
+            if (newPwd !== confirmNewPwd) {
+                alert(dict.pwdErrorMatch);
+                return;
+            }
+
+            const currentUser = sessionStorage.getItem('currentAdmin');
+            const admins = JSON.parse(localStorage.getItem('gameAdmins')) || {};
+
+            if (admins[currentUser] !== oldPwd) {
+                alert(dict.pwdErrorOld);
+                return;
+            }
+
+            // 更新密码
+            admins[currentUser] = newPwd;
+            localStorage.setItem('gameAdmins', JSON.stringify(admins));
+            
+            alert(dict.pwdSuccess);
+            handleLogout();
+        }
+
+        function handleGlobalClear() {
+            if (confirm('警告：此操作将清空全站所有用户的历史记录，是否继续？')) {
+                localStorage.removeItem('userSubmissionHistory');
+                alert('清理成功');
+            }
+        }
+
+        function previewFile() {
+            const preview = document.getElementById('previewAvatar');
+            const file = document.getElementById('avatarInput').files[0];
+            const reader = new FileReader();
+
+            reader.onloadend = function () {
+                preview.src = reader.result;
+            }
+
+            if (file) {
+                reader.readAsDataURL(file);
+            }
+        }
+
+        function saveSettings() {
+            const settings = {
+                darkMode: document.getElementById('darkModeToggle').checked,
+                bgAnim: document.getElementById('bgAnimToggle').checked,
+                userName: document.getElementById('userNameInput').value,
+                language: document.getElementById('languageSelect').value,
+                pushNotify: document.getElementById('pushNotifyToggle').checked,
+                twoFA: document.getElementById('twoFAToggle').checked,
+                avatar: document.getElementById('previewAvatar').src
+            };
+
+            localStorage.setItem('gameCenterSettings', JSON.stringify(settings));
+
+            const toast = document.getElementById('toast');
+            const secondsSpan = document.getElementById('seconds');
+            let timeLeft = 1.5;
+
+            toast.style.display = 'flex';
+            
+            const timer = setInterval(() => {
+                timeLeft -= 0.5;
+                secondsSpan.textContent = timeLeft.toFixed(1);
+                if (timeLeft <= 0) {
+                    clearInterval(timer);
+                    const container = document.querySelector('.settings-container');
+                    container.classList.add('page-exit');
+                    setTimeout(() => {
+                        window.location.href = 'index.html';
+                    }, 500);
+                }
+            }, 500);
+        }
+
+        // 初始化
+        initSettings();
+    </script>
+</body>
+</html>

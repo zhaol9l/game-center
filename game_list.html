@@ -1,0 +1,670 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>游戏大全 - GAME CENTER</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background: linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 100%);
+            color: #fff;
+            min-height: 100vh;
+        }
+
+        /* 复用导航栏样式 */
+        .game-navbar {
+            background: rgba(20, 20, 20, 0.95);
+            padding: 0 50px;
+            height: 70px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.4);
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            z-index: 1000;
+            border-bottom: 3px solid #4CAF50;
+            backdrop-filter: blur(10px);
+        }
+        .nav-logo {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            color: #4CAF50;
+            font-size: 24px;
+            font-weight: 900;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            text-decoration: none;
+        }
+        .nav-links {
+            display: flex;
+            gap: 30px;
+            list-style: none;
+            margin: 0;
+            padding: 0;
+        }
+        .nav-link {
+            text-decoration: none;
+            color: #ddd;
+            font-size: 16px;
+            font-weight: 600;
+            padding: 10px 15px;
+            transition: 0.3s;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .nav-link:hover, .nav-link.active {
+            color: #4CAF50;
+            background: rgba(76, 175, 80, 0.1);
+            border-radius: 4px;
+        }
+
+        /* 移动端菜单按钮 */
+        .menu-toggle {
+            display: none;
+            flex-direction: column;
+            gap: 5px;
+            cursor: pointer;
+            padding: 10px;
+            z-index: 1001;
+        }
+        .menu-toggle span {
+            display: block;
+            width: 25px;
+            height: 3px;
+            background: #4CAF50;
+            border-radius: 3px;
+            transition: 0.3s;
+        }
+
+        .nav-user {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            color: #fff;
+        }
+        .user-avatar {
+            width: 45px;
+            height: 45px;
+            border-radius: 50%;
+            border: 2px solid #4CAF50;
+            background: #333;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+            box-shadow: 0 0 10px rgba(76, 175, 80, 0.5);
+            cursor: pointer;
+            transition: 0.3s;
+        }
+        .user-avatar:hover {
+            transform: scale(1.1);
+            border-color: #81C784;
+            box-shadow: 0 0 15px rgba(76, 175, 80, 0.8);
+        }
+        .user-avatar img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        .exclusive-channel {
+            background: linear-gradient(45deg, #ff4081, #7c4dff);
+            color: white;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 13px;
+            font-weight: bold;
+            letter-spacing: 1px;
+            box-shadow: 0 0 10px rgba(255, 64, 129, 0.5);
+            animation: pulseChannel 2s infinite;
+        }
+        @keyframes pulseChannel {
+            0% { transform: scale(1); opacity: 1; }
+            50% { transform: scale(1.05); opacity: 0.8; }
+            100% { transform: scale(1); opacity: 1; }
+        }
+
+        /* 浅色模式适配 */
+        body.light-mode {
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%) !important;
+            color: #333 !important;
+        }
+        body.light-mode .game-navbar {
+            background: rgba(255, 255, 255, 0.95);
+        }
+        body.light-mode .nav-link { color: #555; }
+        body.light-mode .game-card {
+            background: #fff;
+            border-color: rgba(0,0,0,0.1);
+        }
+        body.light-mode .game-desc { color: #666; }
+        body.light-mode .search-box input {
+            background: rgba(0, 0, 0, 0.05);
+            color: #333;
+        }
+        body.light-mode .filter-tag {
+            background: rgba(0, 0, 0, 0.05);
+            color: #555;
+            border-color: rgba(0,0,0,0.1);
+        }
+        body.light-mode .filter-tag:hover {
+            background: rgba(76, 175, 80, 0.1);
+            color: #4CAF50;
+        }
+        body.light-mode .filter-tag.active {
+            background: #4CAF50;
+            color: #fff;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 100px auto 40px;
+            padding: 20px;
+            animation: pageEnter 0.8s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+        }
+        @keyframes pageEnter {
+            from { opacity: 0; transform: translateY(20px); filter: blur(5px); }
+            to { opacity: 1; transform: translateY(0); filter: blur(0); }
+        }
+        .page-exit {
+            animation: pageExit 0.6s cubic-bezier(0.4, 0, 0.2, 1) forwards !important;
+        }
+        @keyframes pageExit {
+            from { opacity: 1; transform: translateY(0); filter: blur(0); }
+            to { opacity: 0; transform: translateY(-20px); filter: blur(5px); }
+        }
+
+        h1 {
+            text-align: center;
+            font-size: 2.5em;
+            margin-bottom: 40px;
+            background: linear-gradient(to right, #4CAF50, #81C784);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+        }
+
+        .game-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+            gap: 25px;
+        }
+
+        /* 筛选区域样式 */
+        .filter-section {
+            max-width: 1200px;
+            margin: 0 auto 30px;
+            padding: 0 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            align-items: center;
+        }
+        .search-box {
+            width: 100%;
+            max-width: 500px;
+            position: relative;
+        }
+        .search-box input {
+            width: 100%;
+            padding: 12px 20px;
+            border-radius: 25px;
+            border: 2px solid rgba(76, 175, 80, 0.3);
+            background: rgba(255, 255, 255, 0.1);
+            color: inherit;
+            backdrop-filter: blur(5px);
+            font-size: 16px;
+            transition: all 0.3s;
+        }
+        .search-box input:focus {
+            outline: none;
+            border-color: #4CAF50;
+            box-shadow: 0 0 15px rgba(76, 175, 80, 0.3);
+            background: rgba(255, 255, 255, 0.15);
+        }
+        .category-tags {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+        .filter-tag {
+            padding: 8px 18px;
+            border-radius: 20px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            background: rgba(255, 255, 255, 0.05);
+            color: inherit;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-size: 14px;
+        }
+        .filter-tag:hover {
+            background: rgba(76, 175, 80, 0.2);
+            border-color: #4CAF50;
+        }
+        .filter-tag.active {
+            background: #4CAF50;
+            color: white;
+            border-color: #4CAF50;
+            box-shadow: 0 4px 10px rgba(76, 175, 80, 0.3);
+        }
+        .game-card.hidden {
+            display: none;
+        }
+
+        /* 移动端适配 */
+        @media (max-width: 768px) {
+            .game-navbar {
+                padding: 0 20px;
+            }
+            .menu-toggle {
+                display: flex;
+            }
+            .nav-links {
+                position: fixed;
+                top: 70px;
+                left: 0;
+                right: 0;
+                background: rgba(20, 20, 20, 0.98);
+                flex-direction: column;
+                gap: 0;
+                padding: 20px 0;
+                border-bottom: 2px solid #4CAF50;
+                transform: translateY(-150%);
+                transition: 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+                box-shadow: 0 10px 20px rgba(0,0,0,0.5);
+            }
+            .nav-links.active {
+                transform: translateY(0);
+            }
+            .nav-link {
+                padding: 15px 30px;
+                width: 100%;
+                box-sizing: border-box;
+            }
+            .nav-user {
+                gap: 10px;
+            }
+            .exclusive-channel {
+                display: none; /* 移动端隐藏标签以节省空间 */
+            }
+            .container {
+                margin-top: 90px;
+                padding: 15px;
+            }
+            h1 {
+                font-size: 1.8em;
+                margin-bottom: 25px;
+            }
+            .game-grid {
+                grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+                gap: 15px;
+            }
+            .filter-section {
+                padding: 0 10px;
+            }
+        }
+
+        .game-card {
+            background: #333;
+            border-radius: 15px;
+            overflow: hidden;
+            transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            border: 1px solid rgba(255,255,255,0.1);
+            position: relative;
+        }
+
+        .game-card:hover {
+            transform: translateY(-10px) scale(1.03);
+            box-shadow: 0 10px 30px rgba(76, 175, 80, 0.3);
+            border-color: #4CAF50;
+        }
+
+        .game-cover {
+            width: 100%;
+            height: 160px;
+            background: #444;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 50px;
+            overflow: hidden;
+        }
+
+        .game-cover img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            transition: transform 0.5s ease;
+        }
+
+        .game-card:hover .game-cover img {
+            transform: scale(1.1);
+        }
+
+        .game-info {
+            padding: 20px;
+        }
+
+        .game-title {
+            font-size: 18px;
+            font-weight: bold;
+            margin-bottom: 10px;
+            color: #4CAF50;
+        }
+
+        .game-desc {
+            font-size: 14px;
+            color: #aaa;
+            line-height: 1.4;
+        }
+
+        .play-btn {
+            display: inline-block;
+            margin-top: 15px;
+            padding: 8px 20px;
+            background: #4CAF50;
+            color: white;
+            text-decoration: none;
+            border-radius: 5px;
+            font-weight: bold;
+            transition: 0.3s;
+        }
+
+        .play-btn:hover {
+            background: #45a049;
+            box-shadow: 0 0 15px rgba(76, 175, 80, 0.5);
+        }
+
+        .tag {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: rgba(255, 64, 129, 0.9);
+            padding: 3px 10px;
+            border-radius: 10px;
+            font-size: 12px;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <nav class="game-navbar">
+        <a href="index.html" class="nav-logo">🎮 GC</a>
+        <div class="menu-toggle" onclick="toggleMenu()">
+            <span></span>
+            <span></span>
+            <span></span>
+        </div>
+        <ul class="nav-links" id="navLinks">
+            <li><a href="index.html" class="nav-link">🏠 首页</a></li>
+            <li><a href="game_list.html" class="nav-link active">🎮 游戏大全</a></li>
+            <li><a href="admin_dashboard.html" class="nav-link">🛡️ 管理面板</a></li>
+            <li><a href="settings.html" class="nav-link">⚙️ 设置</a></li>
+        </ul>
+        <div class="nav-user">
+            <span class="exclusive-channel">💎 专属通道</span>
+            <div class="user-avatar" onclick="location.href='settings.html#account-section'">
+                <img id="navAvatar" src="./avatar.jpg" alt="Avatar" onerror="this.src='https://img.icons8.com/color/96/girl-profile.png'">
+            </div>
+        </div>
+    </nav>
+
+    <div class="container">
+        <h1>🎮 游戏大全</h1>
+
+        <div class="filter-section">
+            <div class="search-box">
+                <input type="text" id="gameSearchInput" placeholder="🔍 搜索游戏名称...">
+            </div>
+            <div class="category-tags">
+                <button class="filter-tag active" data-category="all">全部</button>
+                <button class="filter-tag" data-category="rpg">角色扮演</button>
+                <button class="filter-tag" data-category="strategy">策略竞技</button>
+                <button class="filter-tag" data-category="fighting">格斗对战</button>
+            </div>
+        </div>
+
+        <div class="game-grid">
+            <!-- 烈焰觉醒 -->
+            <div class="game-card" data-category="rpg">
+                <span class="tag">HOT</span>
+                <div class="game-cover">
+                    <img src="./left1.jpg" alt="Flame Awakening">
+                </div>
+                <div class="game-info">
+                    <div class="game-title">烈焰觉醒</div>
+                    <div class="game-desc">热血奇幻MMORPG，开启你的烈焰征程。</div>
+                    <a href="#" class="play-btn">立即查看</a>
+                </div>
+            </div>
+
+            <!-- 遗弃之地 -->
+            <div class="game-card" data-category="rpg">
+                <div class="game-cover">
+                    <img src="./left2.jpg" alt="Abandoned Land">
+                </div>
+                <div class="game-info">
+                    <div class="game-title">遗弃之地</div>
+                    <div class="game-desc">在末日荒原中生存，探索被遗弃的秘密。</div>
+                    <a href="#" class="play-btn">立即查看</a>
+                </div>
+            </div>
+
+            <!-- 胡莱三国 -->
+            <div class="game-card" data-category="strategy">
+                <div class="game-cover">
+                    <img src="./hulaisanguo.JPG" alt="Hulai Three Kingdoms">
+                </div>
+                <div class="game-info">
+                    <div class="game-title">胡莱三国</div>
+                    <div class="game-desc">经典三国策略，招兵买马成就霸业。</div>
+                    <a href="#" class="play-btn">立即查看</a>
+                </div>
+            </div>
+
+            <!-- 斗罗大陆裂魂世界 -->
+            <div class="game-card" data-category="rpg">
+                <div class="game-cover">
+                    <img src="./duoluodashijie.JPG" alt="Soul Land">
+                </div>
+                <div class="game-info">
+                    <div class="game-title">斗罗大陆裂魂世界</div>
+                    <div class="game-desc">沉浸式魂师体验，重走斗罗之路。</div>
+                    <a href="#" class="play-btn">立即查看</a>
+                </div>
+            </div>
+
+            <!-- 拳皇98终极之战 -->
+            <div class="game-card" data-category="fighting">
+                <div class="game-cover">
+                    <img src="./quanhuang.JPG" alt="King of Fighters 98">
+                </div>
+                <div class="game-info">
+                    <div class="game-title">拳皇98终极之战</div>
+                    <div class="game-desc">热血格斗巅峰，重温经典街机快感。</div>
+                    <a href="#" class="play-btn">立即查看</a>
+                </div>
+            </div>
+
+            <!-- 剑玲珑 -->
+            <div class="game-card" data-category="rpg">
+                <div class="game-cover">
+                    <img src="./jianlinglong.JPG" alt="Jian Ling Long">
+                </div>
+                <div class="game-info">
+                    <div class="game-title">剑玲珑</div>
+                    <div class="game-desc">唯美仙侠RPG，剑指长空，情定玲珑。</div>
+                    <a href="#" class="play-btn">立即查看</a>
+                </div>
+            </div>
+        </div>
+    </div>
+    <script>
+        // 移动端菜单切换
+        function toggleMenu() {
+            const navLinks = document.getElementById('navLinks');
+            navLinks.classList.toggle('active');
+            
+            // 汉堡菜单动画
+            const spans = document.querySelectorAll('.menu-toggle span');
+            if (navLinks.classList.contains('active')) {
+                spans[0].style.transform = 'rotate(45deg) translate(5px, 6px)';
+                spans[1].style.opacity = '0';
+                spans[2].style.transform = 'rotate(-45deg) translate(5px, -7px)';
+            } else {
+                spans[0].style.transform = 'none';
+                spans[1].style.opacity = '1';
+                spans[2].style.transform = 'none';
+            }
+        }
+
+        // 页面丝滑跳转逻辑<script>
+        // 登录状态拦截
+        function checkAuth() {
+            if (sessionStorage.getItem('isAdminLoggedIn') !== 'true') {
+                window.location.href = 'admin_auth.html';
+            }
+        }
+        checkAuth();
+
+        const i18n = {
+            zh: {
+                title: "游戏大全 - GAME CENTER",
+                navHome: "🏠 首页",
+                navGames: "🎮 游戏大全",
+                navHistory: "📜 历史提交记录",
+                navAdmin: "🛡️ 管理面板",
+                navSettings: "⚙️ 设置",
+                pageTitle: "🎮 游戏大全",
+                playBtn: "立即查看"
+            },
+            en: {
+                title: "Games - GAME CENTER",
+                navHome: "🏠 Home",
+                navGames: "🎮 Games",
+                navHistory: "📜 History",
+                navAdmin: "🛡️ Admin",
+                navSettings: "⚙️ Settings",
+                pageTitle: "🎮 Games",
+                playBtn: "View Now"
+            },
+            jp: {
+                title: "ゲーム一覧 - GAME CENTER",
+                navHome: "🏠 ホーム",
+                navGames: "🎮 ゲーム一覧",
+                navHistory: "📜 申請履歴",
+                navAdmin: "🛡️ 管理パネル",
+                navSettings: "⚙️ 設定",
+                pageTitle: "🎮 ゲーム一覧",
+                playBtn: "詳細を見る"
+            }
+        };
+
+        function applySettings() {
+            const saved = JSON.parse(localStorage.getItem('gameCenterSettings')) || { language: 'zh', darkMode: true, userName: '小美' };
+            
+            // 应用语言
+            const lang = saved.language || 'zh';
+            const dict = i18n[lang];
+            
+            document.title = dict.title;
+            document.querySelector('h1').textContent = dict.pageTitle;
+            const navLinks = document.querySelectorAll('.nav-link');
+            if (navLinks.length >= 4) {
+                navLinks[0].textContent = dict.navHome;
+                navLinks[1].textContent = dict.navGames;
+                navLinks[2].textContent = dict.navAdmin;
+                navLinks[3].textContent = dict.navSettings;
+            }
+            
+            document.querySelectorAll('.play-btn').forEach(btn => {
+                btn.textContent = dict.playBtn;
+            });
+
+            // 应用深色模式
+            if (saved.darkMode) {
+                document.body.classList.remove('light-mode');
+            } else {
+                document.body.classList.add('light-mode');
+            }
+
+            // 应用用户名和头像
+            const userBadge = document.querySelector('.exclusive-channel');
+            if (userBadge && saved.userName) {
+                const lang = saved.language || 'zh';
+                const suffix = lang === 'zh' ? '专属' : (lang === 'jp' ? '専用' : 'Exclusive');
+                userBadge.textContent = `💎 ${saved.userName} ${suffix}`;
+            }
+            if (saved.avatar) {
+                const navAvatar = document.getElementById('navAvatar');
+                if (navAvatar) navAvatar.src = saved.avatar;
+            }
+        }
+
+        // 页面丝滑跳转逻辑
+        document.querySelectorAll('a').forEach(link => {
+            link.addEventListener('click', function(e) {
+                const href = this.getAttribute('href');
+                if (href && href !== '#' && !href.startsWith('http') && !href.includes('javascript:void(0)')) {
+                    const target = this.getAttribute('target');
+                    if (target === '_blank') return; // 如果是新窗口打开则跳过
+
+                    e.preventDefault();
+                    const container = document.querySelector('.container');
+                    if (container) {
+                        container.classList.add('page-exit');
+                        setTimeout(() => {
+                            window.location.href = href;
+                        }, 500);
+                    } else {
+                        window.location.href = href;
+                    }
+                }
+            });
+        });
+        // 初始化
+        applySettings();
+
+        // 搜索和过滤逻辑
+        const searchInput = document.getElementById('gameSearchInput');
+        const categoryBtns = document.querySelectorAll('.filter-tag');
+        const gameCards = document.querySelectorAll('.game-card');
+        let currentCategory = 'all';
+
+        function performFilter() {
+            const searchTerm = searchInput.value.toLowerCase();
+            gameCards.forEach(card => {
+                const gameName = card.querySelector('.game-title').textContent.toLowerCase();
+                const category = card.getAttribute('data-category');
+                const matchesSearch = gameName.includes(searchTerm);
+                const matchesCategory = currentCategory === 'all' || category === currentCategory;
+
+                if (matchesSearch && matchesCategory) {
+                    card.classList.remove('hidden');
+                } else {
+                    card.classList.add('hidden');
+                }
+            });
+        }
+
+        searchInput.addEventListener('input', performFilter);
+
+        categoryBtns.forEach(btn => {
+            btn.addEventListener('click', () => {
+                categoryBtns.forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                currentCategory = btn.getAttribute('data-category');
+                performFilter();
+            });
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,786 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>管理看板 - GAME CENTER</title>
+    <style>
+        :root {
+            --primary: #4CAF50;
+            --bg-dark: #1a1a2e;
+            --card-bg: rgba(255, 255, 255, 0.05);
+            --border: rgba(76, 175, 80, 0.3);
+        }
+
+        body {
+            font-family: 'Microsoft YaHei', sans-serif;
+            margin: 0;
+            background: linear-gradient(135deg, #0f0f1a 0%, #1a1a2e 100%);
+            color: #fff;
+            min-height: 100vh;
+        }
+
+        /* 导航栏复用 */
+        .game-navbar {
+            background: rgba(20, 20, 20, 0.95);
+            padding: 0 50px;
+            height: 70px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.4);
+            position: fixed;
+            top: 0; left: 0; right: 0;
+            z-index: 1000;
+            border-bottom: 3px solid var(--primary);
+            backdrop-filter: blur(10px);
+        }
+        .nav-logo { color: var(--primary); font-size: 24px; font-weight: 900; text-decoration: none; }
+        .nav-links { display: flex; gap: 30px; list-style: none; }
+        .nav-link { text-decoration: none; color: #ddd; font-weight: 600; transition: 0.3s; }
+        .nav-link:hover, .nav-link.active { color: var(--primary); }
+
+        /* 移动端菜单按钮 */
+        .menu-toggle {
+            display: none;
+            flex-direction: column;
+            gap: 5px;
+            cursor: pointer;
+            padding: 10px;
+            z-index: 1001;
+        }
+        .menu-toggle span {
+            display: block;
+            width: 25px;
+            height: 3px;
+            background: var(--primary);
+            border-radius: 3px;
+            transition: 0.3s;
+        }
+
+        .nav-user {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            color: #fff;
+        }
+        .user-avatar {
+            width: 45px;
+            height: 45px;
+            border-radius: 50%;
+            border: 2px solid var(--primary);
+            background: #333;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+            box-shadow: 0 0 10px rgba(76, 175, 80, 0.5);
+            cursor: pointer;
+            transition: 0.3s;
+        }
+        .user-avatar:hover {
+            transform: scale(1.1);
+            border-color: #81C784;
+            box-shadow: 0 0 15px rgba(76, 175, 80, 0.8);
+        }
+        .user-avatar img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        .exclusive-channel {
+            background: linear-gradient(45deg, #ff4081, #7c4dff);
+            color: white;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 13px;
+            font-weight: bold;
+            letter-spacing: 1px;
+            box-shadow: 0 0 10px rgba(255, 64, 129, 0.5);
+            animation: pulseChannel 2s infinite;
+        }
+        @keyframes pulseChannel {
+            0% { transform: scale(1); opacity: 1; }
+            50% { transform: scale(1.05); opacity: 0.8; }
+            100% { transform: scale(1); opacity: 1; }
+        }
+
+        /* 浅色模式适配 */
+        body.light-mode {
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%) !important;
+            color: #333 !important;
+        }
+        body.light-mode .game-navbar {
+            background: rgba(255, 255, 255, 0.95);
+        }
+        body.light-mode .nav-link { color: #555; }
+        body.light-mode .stat-card, body.light-mode .admin-section {
+            background: rgba(255, 255, 255, 0.8);
+            border-color: rgba(0,0,0,0.1);
+        }
+        body.light-mode .stat-label { color: #666; }
+        body.light-mode .data-table th { border-bottom-color: rgba(0,0,0,0.05); }
+        body.light-mode .data-table td { border-bottom-color: rgba(0,0,0,0.03); color: #444; }
+        body.light-mode code { background: #eee; color: #d63384; padding: 2px 4px; border-radius: 4px; }
+
+        @keyframes slideDown {
+            from { opacity: 0; transform: translateY(-10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .dashboard-container {
+            max-width: 1200px;
+            margin: 100px auto 50px;
+            padding: 0 20px;
+            animation: pageEnter 0.6s ease-out;
+        }
+
+        @keyframes pageEnter {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* 数据卡片 */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin-bottom: 40px;
+        }
+        .stat-card {
+            background: var(--card-bg);
+            padding: 25px;
+            border-radius: 15px;
+            border: 1px solid var(--border);
+            text-align: center;
+            transition: 0.3s;
+        }
+        .stat-card:hover { transform: translateY(-5px); border-color: var(--primary); }
+        .stat-value { font-size: 32px; font-weight: bold; color: var(--primary); margin: 10px 0; }
+        .stat-label { color: #888; font-size: 14px; }
+
+        /* 表格区域 */
+        .admin-section {
+            background: var(--card-bg);
+            border-radius: 20px;
+            padding: 30px;
+            border: 1px solid var(--border);
+            backdrop-filter: blur(10px);
+        }
+        .section-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 25px;
+        }
+        .section-title { font-size: 20px; color: var(--primary); display: flex; align-items: center; gap: 10px; }
+
+        .data-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 10px;
+        }
+        .data-table th {
+            text-align: left;
+            padding: 15px;
+            border-bottom: 2px solid rgba(255,255,255,0.1);
+            color: #888;
+            font-size: 14px;
+        }
+        .data-table td {
+            padding: 15px;
+            border-bottom: 1px solid rgba(255,255,255,0.05);
+            font-size: 14px;
+        }
+
+        /* 自定义提示框样式 */
+        .toast-msg {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: rgba(76, 175, 80, 0.9);
+            color: white;
+            padding: 15px 25px;
+            border-radius: 10px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+            backdrop-filter: blur(10px);
+            z-index: 2000;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-weight: bold;
+            animation: toastIn 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+        @keyframes toastIn {
+            from { transform: translateX(100%) scale(0.5); opacity: 0; }
+            to { transform: translateX(0) scale(1); opacity: 1; }
+        }
+        .toast-msg.out {
+            animation: toastOut 0.5s forwards;
+        }
+        @keyframes toastOut {
+            to { transform: translateX(120%); opacity: 0; }
+        }
+
+        .status-badge {
+            padding: 4px 10px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: bold;
+        }
+        .status-pending { background: rgba(255, 152, 0, 0.2); color: #ff9800; }
+        .status-success { background: rgba(76, 175, 80, 0.2); color: #4caf50; }
+
+        .btn-action {
+            background: rgba(76, 175, 80, 0.1);
+            border: 1px solid var(--primary);
+            color: var(--primary);
+            padding: 5px 12px;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: 0.3s;
+        }
+        .btn-action:hover { background: var(--primary); color: #fff; }
+
+        .empty-tip { text-align: center; padding: 50px; color: #666; }
+
+        /* 移动端适配 */
+        @media (max-width: 768px) {
+            .game-navbar {
+                padding: 0 20px;
+            }
+            .menu-toggle {
+                display: flex;
+            }
+            .nav-links {
+                position: fixed;
+                top: 70px;
+                left: 0;
+                right: 0;
+                background: rgba(20, 20, 20, 0.98);
+                flex-direction: column;
+                gap: 0;
+                padding: 20px 0;
+                border-bottom: 2px solid var(--primary);
+                transform: translateY(-150%);
+                transition: 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+                box-shadow: 0 10px 20px rgba(0,0,0,0.5);
+            }
+            .nav-links.active {
+                transform: translateY(0);
+            }
+            .nav-link {
+                padding: 15px 30px;
+                display: block;
+            }
+            .nav-user {
+                gap: 10px;
+            }
+            .exclusive-channel {
+                display: none;
+            }
+            .dashboard-container {
+                margin-top: 90px;
+                padding: 0 15px;
+            }
+            .stats-grid {
+                grid-template-columns: 1fr;
+                gap: 15px;
+            }
+            .admin-section {
+                padding: 20px 15px;
+            }
+            .section-header {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 15px;
+            }
+            .table-container {
+                overflow-x: auto;
+                margin: 0 -15px;
+                padding: 0 15px;
+                -webkit-overflow-scrolling: touch;
+            }
+            .data-table {
+                min-width: 700px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <nav class="game-navbar">
+        <a href="index.html" class="nav-logo">🎮 GC</a>
+        <div class="menu-toggle" onclick="toggleMenu()">
+            <span></span>
+            <span></span>
+            <span></span>
+        </div>
+        <ul class="nav-links" id="navLinks">
+            <li><a href="index.html" class="nav-link">🏠 首页</a></li>
+            <li><a href="game_list.html" class="nav-link">🎮 游戏大全</a></li>
+            <li><a href="admin_dashboard.html" class="nav-link active">🛡️ 管理面板</a></li>
+            <li><a href="settings.html" class="nav-link">⚙️ 设置</a></li>
+        </ul>
+        <div class="nav-user">
+            <span class="exclusive-channel">💎 专属通道</span>
+            <div class="user-avatar" onclick="location.href='settings.html#account-section'">
+                <img id="navAvatar" src="./avatar.jpg" alt="Avatar" onerror="this.src='https://img.icons8.com/color/96/girl-profile.png'">
+            </div>
+        </div>
+    </nav>
+
+    <div class="dashboard-container">
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-label">今日申请数</div>
+                <div class="stat-value" id="todayCount">0</div>
+                <div class="stat-label">较昨日 +0%</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">总申请总量</div>
+                <div class="stat-value" id="totalCount">0</div>
+                <div class="stat-label">全站实时汇总</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">已登记用户数</div>
+                <div class="stat-value" id="userRegCount">0</div>
+                <div class="stat-label" id="regTodayCount">今日新增: 0</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">当前在线管理员</div>
+                <div class="stat-value">1</div>
+                <div class="stat-label">系统运行正常</div>
+            </div>
+        </div>
+
+        <div id="regSection" class="admin-section" style="margin-top: 30px;">
+            <div class="section-header">
+                <div class="section-title">👤 每日申请记录</div>
+                <div style="display: flex; gap: 10px;">
+                    <button class="btn-action" onclick="toggleRegForm()" style="background: var(--primary); color: white;">➕ 新增登记</button>
+                    <button class="btn-action" onclick="exportRegData()" style="background: #FF9800;">📥 下载报表</button>
+                </div>
+            </div>
+            
+            <!-- 快速登记表单 (默认隐藏) -->
+            <div id="regForm" style="display: none; gap: 15px; margin-bottom: 25px; padding: 15px; background: rgba(255,255,255,0.03); border-radius: 10px; animation: slideDown 0.3s ease-out;">
+                <input type="text" id="regUserName" placeholder="输入用户姓名/ID" style="flex: 1; padding: 8px 12px; background: rgba(0,0,0,0.2); border: 1px solid var(--border); border-radius: 4px; color: #fff;">
+                <input type="text" id="regGame" placeholder="关联游戏" style="flex: 1; padding: 8px 12px; background: rgba(0,0,0,0.2); border: 1px solid var(--border); border-radius: 4px; color: #fff;">
+                <button class="btn-action" onclick="handleAddUser()">提交登记</button>
+            </div>
+
+            <div class="table-container">
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>用户ID</th>
+                        <th>关联游戏</th>
+                        <th>登记管理员</th>
+                        <th>登记时间</th>
+                        <th>操作</th>
+                    </tr>
+                </thead>
+                <tbody id="userRegTableBody">
+                    <!-- 登记数据 -->
+                </tbody>
+            </table>
+            </div>
+        </div>
+
+        <div class="admin-section" style="margin-top: 30px;">
+            <div class="section-header">
+                <div class="section-title">📝 全站申请记录 (实时)</div>
+                <div style="display: flex; gap: 10px;">
+                    <button class="btn-action" onclick="refreshData()">🔄 刷新数据</button>
+                    <button class="btn-action" onclick="exportToCSV()" style="background: #2196F3;">📥 导出 CSV</button>
+                </div>
+            </div>
+            <div class="table-container">
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>申请ID</th>
+                        <th>游戏名称</th>
+                        <th>区服角色</th>
+                        <th>提交时间</th>
+                        <th>当前状态</th>
+                        <th>操作</th>
+                    </tr>
+                </thead>
+                <tbody id="adminTableBody">
+                    <!-- 数据动态加载 -->
+                </tbody>
+            </table>
+            </div>
+            <div id="emptyTip" class="empty-tip" style="display: none;">暂无申请数据</div>
+        </div>
+    </div>
+
+    <script>
+        // 移动端菜单切换
+        function toggleMenu() {
+            const navLinks = document.getElementById('navLinks');
+            navLinks.classList.toggle('active');
+            
+            const spans = document.querySelectorAll('.menu-toggle span');
+            if (navLinks.classList.contains('active')) {
+                spans[0].style.transform = 'rotate(45deg) translate(5px, 6px)';
+                spans[1].style.opacity = '0';
+                spans[2].style.transform = 'rotate(-45deg) translate(5px, -7px)';
+            } else {
+                spans[0].style.transform = 'none';
+                spans[1].style.opacity = '1';
+                spans[2].style.transform = 'none';
+            }
+        }
+
+        // 登录保护
+        if (sessionStorage.getItem('isAdminLoggedIn') !== 'true') {
+            window.location.href = 'admin_auth.html';
+        }
+
+        // --- 自动退出安全机制 ---
+        let idleTimer;
+        const TIMEOUT_DURATION = 24 * 60 * 60 * 1000; // 24小时无操作则退出
+
+        function resetIdleTimer() {
+            clearTimeout(idleTimer);
+            idleTimer = setTimeout(logout, TIMEOUT_DURATION);
+        }
+
+        function logout() {
+            sessionStorage.removeItem('isAdminLoggedIn');
+            alert('由于长时间未操作，为了您的账号安全，系统已自动退出登录。');
+            window.location.href = 'admin_auth.html';
+        }
+
+        // 监听用户活动
+        window.onload = resetIdleTimer;
+        window.onmousemove = resetIdleTimer;
+        window.onmousedown = resetIdleTimer; // 点击
+        window.ontouchstart = resetIdleTimer; // 手机触摸
+        window.onclick = resetIdleTimer;     // 鼠标点击
+        window.onkeydown = resetIdleTimer;   // 键盘输入
+        window.onscroll = resetIdleTimer;    // 滚动
+        // --- 自动退出安全机制结束 ---
+
+        const i18n = {
+            zh: {
+                navHome: "🏠 首页",
+                navGames: "🎮 游戏大全",
+                navHistory: "📜 历史提交记录",
+                navAdmin: "🛡️ 管理面板",
+                navSettings: "⚙️ 设置",
+                pageTitle: "🛡️ 管理员面板 - GAME CENTER",
+                sectionTitle: "📝 全站申请记录 (实时)",
+                regSectionTitle: "👤 每日申请记录",
+                addBtn: "➕ 新增登记",
+                refreshBtn: "🔄 刷新数据",
+                downloadBtn: "📥 下载报表",
+                colId: "申请ID",
+                colGame: "游戏名称",
+                colAdmin: "管理员名称",
+                colTime: "提交时间",
+                colStatus: "当前状态",
+                colAction: "操作",
+                btnDelete: "删除",
+                confirmDelete: "确定要删除这笔申请记录吗？",
+                statusProcessed: "已处理",
+                emptyTip: "暂无申请数据"
+            },
+            en: {
+                navHome: "🏠 Home",
+                navGames: "🎮 Games",
+                navHistory: "📜 History",
+                navAdmin: "🛡️ Admin",
+                navSettings: "⚙️ Settings",
+                pageTitle: "🛡️ Admin Panel - GAME CENTER",
+                sectionTitle: "📝 Global Application Records",
+                refreshBtn: "🔄 Refresh",
+                colId: "ID",
+                colGame: "Game",
+                colAdmin: "Admin",
+                colTime: "Time",
+                colStatus: "Status",
+                colAction: "Action",
+                btnDelete: "Delete",
+                confirmDelete: "Are you sure you want to delete this record?",
+                statusProcessed: "Success",
+                emptyTip: "No records found"
+            },
+            jp: {
+                navHome: "🏠 ホーム",
+                navGames: "🎮 ゲーム一覧",
+                navHistory: "📜 申請履歴",
+                navAdmin: "🛡️ 管理パネル",
+                navSettings: "⚙️ 設定",
+                pageTitle: "🛡️ 管理パネル - GAME CENTER",
+                sectionTitle: "📝 全体申請履歴 (リアルタイム)",
+                refreshBtn: "🔄 更新",
+                colId: "ID",
+                colGame: "ゲーム名",
+                colAdmin: "管理者",
+                colTime: "时间",
+                colStatus: "状況",
+                colAction: "操作",
+                btnDelete: "削除",
+                confirmDelete: "この記録を削除してもよろしいですか？",
+                statusProcessed: "処理済み",
+                emptyTip: "データがありません"
+            }
+        };
+
+        function applySettings() {
+            const saved = JSON.parse(localStorage.getItem('gameCenterSettings')) || { language: 'zh' };
+            const lang = saved.language || 'zh';
+            const dict = i18n[lang];
+
+            // 应用深色模式
+            if (saved.darkMode !== false) {
+                document.body.classList.remove('light-mode');
+            } else {
+                document.body.classList.add('light-mode');
+            }
+            const navLinks = document.querySelectorAll('.nav-link');
+            if (navLinks.length >= 4) {
+                navLinks[0].textContent = dict.navHome;
+                navLinks[1].textContent = dict.navGames;
+                navLinks[2].textContent = dict.navAdmin;
+                navLinks[3].textContent = dict.navSettings;
+            }
+
+            // 页面内容
+            document.querySelector('.section-title').textContent = dict.sectionTitle;
+            
+            // 更新每日申请记录面板标题和按钮
+            const regSection = document.getElementById('regSection');
+            if (regSection) {
+                regSection.querySelector('.section-title').textContent = dict.regSectionTitle || "👤 每日申请记录";
+                const btns = regSection.querySelectorAll('.btn-action');
+                btns[0].textContent = dict.addBtn || "➕ 新增登记";
+                btns[1].textContent = dict.downloadBtn || "📥 下载报表";
+            }
+            
+            // 更新全站记录面板的按钮 (由于上面的面板新增了ID，这里的索引需要对应)
+            const globalSection = document.querySelectorAll('.admin-section')[2];
+            if (globalSection) {
+                globalSection.querySelector('.btn-action').textContent = dict.refreshBtn;
+            }
+            document.getElementById('emptyTip').textContent = dict.emptyTip;
+
+            // 表头
+            const ths = document.querySelectorAll('.data-table:last-of-type th');
+            if (ths.length > 0) {
+                ths[0].textContent = dict.colId;
+                ths[1].textContent = dict.colGame;
+                ths[2].textContent = dict.colAdmin;
+                ths[3].textContent = dict.colTime;
+                ths[4].textContent = dict.colStatus;
+                ths[5].textContent = dict.colAction;
+            }
+
+            // 应用用户名和头像
+            const userBadge = document.querySelector('.exclusive-channel');
+            if (userBadge && saved.userName) {
+                userBadge.textContent = `💎 ${saved.userName} 专属`;
+            }
+            if (saved.avatar) {
+                const navAvatar = document.getElementById('navAvatar');
+                if (navAvatar) navAvatar.src = saved.avatar;
+            }
+
+            // 登记统计
+            const regData = JSON.parse(localStorage.getItem('userRegistrations')) || [];
+            document.getElementById('userRegCount').textContent = regData.length;
+            document.getElementById('regTodayCount').textContent = `今日新增: ` + regData.filter(item => {
+                const today = new Date().toLocaleDateString();
+                return item.timestamp.includes(today);
+            }).length;
+
+            const userTableBody = document.getElementById('userRegTableBody');
+            userTableBody.innerHTML = regData.map(item => `
+                <tr>
+                    <td><code>${item.userName}</code></td>
+                    <td>${item.game}</td>
+                    <td>${item.admin}</td>
+                    <td>${item.timestamp}</td>
+                    <td>
+                        <button class="btn-action" onclick="deleteReg('${item.id}')">${dict.btnDelete}</button>
+                    </td>
+                </tr>
+            `).join('');
+
+            refreshData(dict);
+        }
+
+        function toggleRegForm() {
+            const form = document.getElementById('regForm');
+            form.style.display = form.style.display === 'none' ? 'flex' : 'none';
+        }
+
+        function showToast(msg) {
+            const toast = document.createElement('div');
+            toast.className = 'toast-msg';
+            toast.innerHTML = `<span>✅</span> ${msg}`;
+            document.body.appendChild(toast);
+            setTimeout(() => {
+                toast.classList.add('out');
+                setTimeout(() => toast.remove(), 500);
+            }, 3000);
+        }
+
+        function handleAddUser() {
+            const userName = document.getElementById('regUserName').value.trim();
+            const game = document.getElementById('regGame').value.trim();
+            // 优先从 sessionStorage 获取，其次从 localStorage 获取
+            const currentAdmin = sessionStorage.getItem('currentAdmin') || localStorage.getItem('lastAdminUser') || '管理员';
+
+            if (!userName || !game) {
+                showToast('❌ 请填写完整的登记信息');
+                return;
+            }
+
+            const regData = JSON.parse(localStorage.getItem('userRegistrations')) || [];
+            const newReg = {
+                id: 'REG' + Date.now(),
+                userName: userName,
+                game: game,
+                admin: currentAdmin,
+                timestamp: new Date().toLocaleString()
+            };
+
+            regData.unshift(newReg);
+            localStorage.setItem('userRegistrations', JSON.stringify(regData));
+            
+            document.getElementById('regUserName').value = '';
+            document.getElementById('regGame').value = '';
+            toggleRegForm(); // 提交后自动收起
+            applySettings();
+            showToast('用户登记成功！');
+        }
+
+        function deleteReg(id) {
+            if (confirm('确定要删除这笔登记记录吗？')) {
+                let regData = JSON.parse(localStorage.getItem('userRegistrations')) || [];
+                regData = regData.filter(item => item.id !== id);
+                localStorage.setItem('userRegistrations', JSON.stringify(regData));
+                applySettings();
+            }
+        }
+
+        function exportRegData() {
+            const regData = JSON.parse(localStorage.getItem('userRegistrations')) || [];
+            if (regData.length === 0) {
+                alert('暂无登记数据可导出');
+                return;
+            }
+
+            const headers = ['用户ID', '关联游戏', '登记管理员', '登记时间'];
+            const rows = regData.map(item => [
+                item.userName,
+                item.game,
+                item.admin,
+                item.timestamp
+            ]);
+
+            const csvContent = "\uFEFF" + [headers, ...rows].map(e => e.join(",")).join("\n");
+            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement("a");
+            const url = URL.createObjectURL(blob);
+            
+            link.setAttribute("href", url);
+            link.setAttribute("download", `用户注册统计_${new Date().toLocaleDateString()}.csv`);
+            link.style.visibility = 'hidden';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+
+        function refreshData(dict) {
+            if (!dict) {
+                const saved = JSON.parse(localStorage.getItem('gameCenterSettings')) || { language: 'zh' };
+                dict = i18n[saved.language || 'zh'];
+            }
+            const history = JSON.parse(localStorage.getItem('userSubmissionHistory')) || [];
+            const tableBody = document.getElementById('adminTableBody');
+            const emptyTip = document.getElementById('emptyTip');
+            
+            document.getElementById('totalCount').textContent = history.length;
+            document.getElementById('todayCount').textContent = history.filter(item => {
+                const today = new Date().toLocaleDateString();
+                return item.timestamp.includes(today);
+            }).length;
+
+            if (history.length === 0) {
+                tableBody.innerHTML = '';
+                emptyTip.style.display = 'block';
+                return;
+            }
+
+            emptyTip.style.display = 'none';
+            tableBody.innerHTML = history.map(item => `
+                <tr>
+                    <td><code>${item.id}</code></td>
+                    <td>${item.gameName}</td>
+                    <td>${item.adminName || '系统分配'}</td>
+                    <td>${item.timestamp}</td>
+                    <td><span class="status-badge status-success">${dict.statusProcessed}</span></td>
+                    <td>
+                        <button class="btn-action" onclick="deleteRecord('${item.id}')">${dict.btnDelete}</button>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        function deleteRecord(id) {
+            const saved = JSON.parse(localStorage.getItem('gameCenterSettings')) || { language: 'zh' };
+            const dict = i18n[saved.language || 'zh'];
+            if (confirm(dict.confirmDelete)) {
+                let history = JSON.parse(localStorage.getItem('userSubmissionHistory')) || [];
+                history = history.filter(item => item.id !== id);
+                localStorage.setItem('userSubmissionHistory', JSON.stringify(history));
+                refreshData(dict);
+            }
+        }
+
+        function exportToCSV() {
+            const history = JSON.parse(localStorage.getItem('userSubmissionHistory')) || [];
+            if (history.length === 0) {
+                alert('暂无数据可导出');
+                return;
+            }
+
+            // CSV 表头
+            const headers = ['申请ID', '游戏名称', '区服', '角色名/ID', '提交时间', '状态'];
+            
+            // CSV 内容行
+            const rows = history.map(item => [
+                item.id,
+                item.gameName,
+                item.platform || item.server,
+                item.character || item.roleName,
+                item.timestamp,
+                '已处理'
+            ]);
+
+            // 合并为 CSV 字符串 (添加 BOM 解决 Excel 中文乱码)
+            const csvContent = "\uFEFF" + [headers, ...rows].map(e => e.join(",")).join("\n");
+            
+            // 创建下载链接
+            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement("a");
+            const url = URL.createObjectURL(blob);
+            
+            link.setAttribute("href", url);
+            link.setAttribute("download", `游戏申请记录_${new Date().toLocaleDateString()}.csv`);
+            link.style.visibility = 'hidden';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+
+        // 初始化
+        applySettings();
+    </script>
+</body>
+</html>
