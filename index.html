@@ -1408,41 +1408,10 @@
                 jp: { id: "申請番号", name: "ゲーム名", role: "キャラ名", roleId: "キャラID", time: "提出時間", status: "申請状況", success: "申請成功", fail: "申請失敗" }
             };
             const labels = i18nRes[lang] || i18nRes.zh;
-
-            // 1. 先渲染当前用户提交的结果 (放在最顶部)
-            if (userData) {
-                const item = document.createElement('div');
-                item.className = 'result-item success';
-                item.style.animationDelay = '0s';
-                const auditNumber = currentAuditNumber || ('USER-' + Math.floor(Math.random() * 10000).toString().padStart(4, '0'));
-                item.innerHTML = `
-                    <strong>${labels.id}:</strong> ${auditNumber} <br>
-                    <strong>${labels.name}:</strong> ${userData.gameName} <br>
-                    <strong>${labels.role}:</strong> ${userData.character} <br>
-                    <strong>${labels.roleId}:</strong> ${userData.character} <br>
-                    <strong>${labels.time}:</strong> ${new Date().toLocaleString()} <br>
-                    <strong>${labels.status}:</strong> ${labels.success}
-                `;
-                resultsContainer.appendChild(item);
-            }
-
-            // 2. 整合模拟历史数据
-            const gameNameInput = userData ? userData.gameName : (document.getElementById('gameName').value || 'Default Game');
-            const count = Math.floor(Math.random() * 41) + 60;
-            const commonChineseChars = '的一是在不了有人和这中大为上个国我以要他时来用们生到作地于出就分对成会可主发年动同工也能下过子说产种面而方后多定行学法所民得经十三之进着等部度家电力里如水化高自二理起小物现实加量都两体制机当使点从业本去把性好应开它合还因由其些然前外天政四日那社义事平形相全表间样与关各重新线内数正心反你明看原又么利比或但质气第向道命此变条只没结解问意建月公无系军很情者最立代想已通并提直题党程展五果料象员革位入常文总次品式活设及管特件长求老头基资边流路级少图山统接知较将组见计别她手角期根论运农指几九区强放决西被干做必战先回则任取据处队南给色光门即保治北造百规热领七海口东导器压志世金增争济阶油思术极交受联什认六共权收证改清己美再采转更单风切打白教速花带安场身车例真务具万每目至达走积示议声报斗完类八离华名确才科张信马节话米整空元况今集温传土许步群广石记需段研界拉林律叫且究观越织装影算低持音众书布复容儿须际商非验连断深难近矿千周委素技备半办青省列习响约支般史感劳便团往酸历市克何除消构府称太准精值号率族维划选标写存候毛亲快效斯院查江型眼王按格养易置派层片始却专状育厂京识适属圆包火住调满县局照参红细引听该铁价严龙飞';
             const generatedIDs = new Set();
-            
-            for (let i = 0; i < count; i++) {
-                const item = document.createElement('div');
-                item.className = 'result-item';
-                item.style.animationDelay = ((i + (userData ? 1 : 0)) * 0.05) + 's';
-                const isSuccess = Math.random() > 0.2;
-                item.classList.add(isSuccess ? 'success' : 'fail');
-                const nameLength = Math.floor(Math.random() * 5) + 2;
-                let randomName = '';
-                for (let j = 0; j < nameLength; j++) {
-                    randomName += commonChineseChars.charAt(Math.floor(Math.random() * commonChineseChars.length));
-                }
+
+            // 内部辅助函数：生成随机角色ID
+            function generateRandomRoleID() {
                 let roleID;
                 do {
                     roleID = Math.floor(Math.random() * 1000000).toString().padStart(6, '0') + 
@@ -1453,6 +1422,47 @@
                              (Math.random() > 0.5 ? 'X' : Math.floor(Math.random() * 10));
                 } while (generatedIDs.has(roleID));
                 generatedIDs.add(roleID);
+                return roleID;
+            }
+
+            // 1. 先渲染当前用户提交的结果 (放在最顶部)
+            if (userData) {
+                const item = document.createElement('div');
+                item.className = 'result-item success';
+                item.style.animationDelay = '0s';
+                const auditNumber = currentAuditNumber || ('USER-' + Math.floor(Math.random() * 10000).toString().padStart(4, '0'));
+                const randomRoleID = generateRandomRoleID(); // 第一条也使用随机ID
+                item.innerHTML = `
+                    <strong>${labels.id}:</strong> ${auditNumber} <br>
+                    <strong>${labels.name}:</strong> ${userData.gameName} <br>
+                    <strong>${labels.role}:</strong> ${userData.character} <br>
+                    <strong>${labels.roleId}:</strong> ${randomRoleID} <br>
+                    <strong>${labels.time}:</strong> ${new Date().toLocaleString()} <br>
+                    <strong>${labels.status}:</strong> ${labels.success}
+                `;
+                resultsContainer.appendChild(item);
+            }
+
+            // 2. 整合模拟历史数据
+            const gameNameInput = userData ? userData.gameName : (document.getElementById('gameName').value || 'Default Game');
+            const count = Math.floor(Math.random() * 41) + 60;
+            const commonChineseChars = '的一是在不了有人和这中大为上个国我以要他时来用们生到作地于出就分对成会可主发年动同工也能下过子说产种面而方后多定行学法所民得经十三之进着等部度家电力里如水化高自二理起小物现实加量都两体制机当使点从业本去把性好应开它合还因由其些然前外天政四日那社义事平形相全表间样与关各重新线内数正心反你明看原又么利比或但质气第向道命此变条只没结解问意建月公无系军很情者最立代想已通并提直题党程展五果料象员革位入常文总次品式活设及管特件长求老头基资边流路级少图山统接知较将组见计别她手角期根论运农指几九区强放决西被干做必战先回则任取据处队南给色光门即保治北造百规热领七海口东导器压志世金增争济阶油思术极交受联什认六共权收证改清己美再采转更单风切打白教速花带安场身車例真务具万每目至达走积示议声报斗完类八离华名确才科张信马节话米整空元况今集温传土许步群广石记需段研界拉林律叫且究观越织装影算低持音众书布复容儿须际商非验连断深难近矿千周委素技备半办青省列习响约支般史感劳便团往酸历市克何除消构府称太准精值号率族维划选标写存候毛亲快效斯院查江型眼王按格养易置派层片始却专状育厂京识适属圆包火住调满县局照参红细引听该铁价严龙飞';
+            
+            for (let i = 0; i < count; i++) {
+                const item = document.createElement('div');
+                item.className = 'result-item';
+                item.style.animationDelay = ((i + (userData ? 1 : 0)) * 0.05) + 's';
+                const isSuccess = Math.random() > 0.2;
+                item.classList.add(isSuccess ? 'success' : 'fail');
+                
+                const nameLength = Math.floor(Math.random() * 5) + 2;
+                let randomName = '';
+                for (let j = 0; j < nameLength; j++) {
+                    randomName += commonChineseChars.charAt(Math.floor(Math.random() * commonChineseChars.length));
+                }
+                
+                const roleID = generateRandomRoleID(); // 历史数据也使用随机ID
+                
                 const submitDate = new Date();
                 submitDate.setMinutes(submitDate.getMinutes() - Math.floor(Math.random() * 60));
                 const auditNumber = String.fromCharCode(65 + Math.floor(Math.random() * 26)) + 
