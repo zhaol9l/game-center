@@ -396,6 +396,13 @@
             if (!localStorage.getItem('gameAdmins')) {
                 localStorage.setItem('gameAdmins', JSON.stringify({ 'admin': 'admin123' }));
             }
+            // 自动填充上次登录的账号
+            const lastUser = localStorage.getItem('lastAdminUser');
+            if (lastUser) {
+                document.getElementById('loginUser').value = lastUser;
+                // 如果有账号，焦点自动跳转到密码框
+                document.getElementById('loginPass').focus();
+            }
         };
 
         function switchTab(type) {
@@ -463,50 +470,60 @@
             hideFindPwd();
         }
 
-        function handleAuth(event, type) {
+        async function handleAuth(event, type) {
             event.preventDefault();
             
+            const savedSettings = JSON.parse(localStorage.getItem('gameCenterSettings')) || { language: 'zh' };
+            const dict = i18n[savedSettings.language || 'zh'];
+
             if (type === 'register') {
                 const user = document.getElementById('regUser').value.trim();
                 const pass = document.getElementById('regPass').value.trim();
                 const code = document.getElementById('regCode').value.trim();
 
-                const savedSettings = JSON.parse(localStorage.getItem('gameCenterSettings')) || { language: 'zh' };
-                const dict = i18n[savedSettings.language || 'zh'];
-
-                if (code !== '666') {
-                    showMessage(dict.authCodeError, true);
-                    return;
+                try {
+                    const res = await fetch('/api/register', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ username: user, password: pass, authCode: code })
+                    });
+                    const data = await res.json();
+                    if (res.ok) {
+                        showMessage(dict.regSuccess);
+                        localStorage.setItem('lastAdminUser', user);
+                        switchTab('login');
+                        document.getElementById('loginUser').value = user;
+                        document.getElementById('loginPass').focus();
+                    } else {
+                        showMessage(data.message || dict.authCodeError, true);
+                    }
+                } catch (err) {
+                    showMessage("连接服务器失败", true);
                 }
-
-                const admins = JSON.parse(localStorage.getItem('gameAdmins')) || {};
-                if (admins[user]) {
-                    showMessage(dict.userExist, true);
-                    return;
-                }
-
-                admins[user] = pass;
-                localStorage.setItem('gameAdmins', JSON.stringify(admins));
-                showMessage(dict.regSuccess);
-                switchTab('login');
             } else {
                 const user = document.getElementById('loginUser').value;
                 const pass = document.getElementById('loginPass').value;
-                const admins = JSON.parse(localStorage.getItem('gameAdmins')) || { 'admin': 'admin123' };
-                
-                const savedSettings = JSON.parse(localStorage.getItem('gameCenterSettings')) || { language: 'zh' };
-                const dict = i18n[savedSettings.language || 'zh'];
 
-                if (admins[user] && admins[user] === pass) {
-                    showMessage(dict.loginSuccess);
-                    sessionStorage.setItem('isAdminLoggedIn', 'true');
-                    sessionStorage.setItem('currentAdmin', user);
-                    localStorage.setItem('lastAdminUser', user); // 持久化存储管理员名
-                    setTimeout(() => {
-                        window.location.href = 'index.html';
-                    }, 1500);
-                } else {
-                    showMessage(dict.loginError, true);
+                try {
+                    const res = await fetch('/api/login', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ username: user, password: pass })
+                    });
+                    const data = await res.json();
+                    if (res.ok) {
+                        showMessage(dict.loginSuccess);
+                        localStorage.setItem('isAdminLoggedIn', 'true');
+                        localStorage.setItem('currentAdmin', data.username);
+                        localStorage.setItem('lastAdminUser', data.username);
+                        setTimeout(() => {
+                            window.location.href = 'index.html';
+                        }, 1500);
+                    } else {
+                        showMessage(data.message || dict.loginError, true);
+                    }
+                } catch (err) {
+                    showMessage("连接服务器失败", true);
                 }
             }
         }

@@ -435,7 +435,7 @@
         }
 
         // 登录保护
-        if (sessionStorage.getItem('isAdminLoggedIn') !== 'true') {
+        if (localStorage.getItem('isAdminLoggedIn') !== 'true') {
             window.location.href = 'admin_auth.html';
         }
 
@@ -449,7 +449,8 @@
         }
 
         function logout() {
-            sessionStorage.removeItem('isAdminLoggedIn');
+            localStorage.removeItem('isAdminLoggedIn');
+            localStorage.removeItem('currentAdmin');
             alert('由于长时间未操作，为了您的账号安全，系统已自动退出登录。');
             window.location.href = 'admin_auth.html';
         }
@@ -632,8 +633,8 @@
         function handleAddUser() {
             const userName = document.getElementById('regUserName').value.trim();
             const game = document.getElementById('regGame').value.trim();
-            // 优先从 sessionStorage 获取，其次从 localStorage 获取
-            const currentAdmin = sessionStorage.getItem('currentAdmin') || localStorage.getItem('lastAdminUser') || '管理员';
+            // 优先从 localStorage 获取 currentAdmin 获取逻辑统一为从 localStorage 获取。
+            const currentAdmin = localStorage.getItem('currentAdmin') || localStorage.getItem('lastAdminUser') || '管理员';
 
             if (!userName || !game) {
                 showToast('❌ 请填写完整的登记信息');

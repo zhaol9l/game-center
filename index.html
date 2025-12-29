@@ -1052,7 +1052,7 @@
     <script>
         // 登录状态拦截
         function checkAuth() {
-            if (sessionStorage.getItem('isAdminLoggedIn') !== 'true') {
+            if (localStorage.getItem('isAdminLoggedIn') !== 'true') {
                 window.location.href = 'admin_auth.html';
             }
         }

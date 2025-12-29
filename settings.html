@@ -617,7 +617,7 @@
 
         // 登录状态拦截
         function checkAuth() {
-            if (sessionStorage.getItem('isAdminLoggedIn') !== 'true') {
+            if (localStorage.getItem('isAdminLoggedIn') !== 'true') {
                 window.location.href = 'admin_auth.html';
             }
         }
@@ -972,9 +972,9 @@
             });
         });
 
-        function handleLogout() {
-            sessionStorage.removeItem('isAdminLoggedIn');
-            sessionStorage.removeItem('currentAdmin');
+        function logout() {
+            localStorage.removeItem('isAdminLoggedIn');
+            localStorage.removeItem('currentAdmin');
             window.location.href = 'admin_auth.html';
         }
 
@@ -1009,7 +1009,7 @@
                 return;
             }
 
-            const currentUser = sessionStorage.getItem('currentAdmin');
+            const currentUser = localStorage.getItem('currentAdmin');
             const admins = JSON.parse(localStorage.getItem('gameAdmins')) || {};
 
             if (admins[currentUser] !== oldPwd) {
