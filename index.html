@@ -767,43 +767,102 @@
         /* 移动端响应式优化 */
         @media screen and (max-width: 1200px) {
             .sidebar {
-                display: none; /* 屏幕较小时隐藏侧边栏，避免挡字 */
+                display: none; /* 屏幕较小时隐藏侧边栏 */
             }
             .main-content {
                 margin: 80px auto 20px !important;
                 width: 95% !important;
-                padding: 20px !important;
+                padding: 10px !important;
             }
             .game-navbar {
-                padding: 10px 15px;
+                padding: 0 15px;
+                height: 60px;
             }
             .nav-links {
-                gap: 10px;
+                gap: 5px;
             }
             .nav-link {
-                font-size: 13px;
-                padding: 5px 8px;
+                font-size: 12px;
+                padding: 5px 6px;
+                gap: 4px;
             }
             .nav-logo {
-                font-size: 16px;
+                font-size: 14px;
+                gap: 6px;
             }
             .exclusive-channel {
-                display: none; /* 手机端隐藏专属通道文字 */
+                display: none;
+            }
+            .user-avatar {
+                width: 35px;
+                height: 35px;
+            }
+        }
+
+        @media screen and (max-width: 768px) {
+            h1 {
+                font-size: 2rem;
+                margin-bottom: 20px;
+            }
+            .carousel, .carousel-img {
+                height: 220px;
+            }
+            .carousel-container {
+                margin-bottom: 25px;
+            }
+            button[type="submit"] {
+                width: 100%;
+                max-width: 280px;
+            }
+            .nav-links {
+                position: fixed;
+                bottom: 0;
+                left: 0;
+                right: 0;
+                background: rgba(20, 20, 20, 0.95);
+                backdrop-filter: blur(10px);
+                display: flex;
+                justify-content: space-around;
+                padding: 10px 0;
+                border-top: 2px solid #4CAF50;
+                gap: 0;
+                z-index: 1001;
+            }
+            .nav-link {
+                flex-direction: column;
+                font-size: 10px;
+                gap: 2px;
+            }
+            .nav-link i, .nav-link span {
+                font-size: 18px;
+            }
+            .main-content {
+                margin-bottom: 80px !important; /* 为底部导航留出空间 */
+            }
+            .game-navbar {
+                justify-content: space-between;
+            }
+            .float-ball {
+                bottom: 100px; /* 避开底部导航 */
+                right: 20px;
+                width: 45px;
+                height: 45px;
             }
         }
 
         @media screen and (max-width: 480px) {
             h1 {
-                font-size: 24px;
-            }
-            .nav-links {
-                display: none; /* 极小屏幕隐藏导航 */
-            }
-            .carousel-container {
-                height: 200px;
+                font-size: 1.6rem;
             }
             .carousel, .carousel-img {
-                height: 200px;
+                height: 180px;
+            }
+            .form-group {
+                padding: 12px;
+            }
+            input, select {
+                padding: 8px;
+                font-size: 14px;
             }
         }
 
