@@ -14,9 +14,17 @@ app.use(cors());
 const MONGO_URI = process.env.MONGO_URL || "mongodb://localhost:27017/game-center";
 const AUTH_CODE = process.env.REG_AUTH_CODE || "666"; // 注册授权码，上线后可在平台配置
 
-mongoose.connect(MONGO_URI, { useNewUrlParser: true, useUnifiedTopology: true })
+mongoose.connect(MONGO_URI, { 
+    useNewUrlParser: true, 
+    useUnifiedTopology: true,
+    serverSelectionTimeoutMS: 5000, // 5秒连接超时
+    autoIndex: true // 允许自动创建索引
+})
     .then(() => console.log("✅ 数据库连接成功"))
     .catch(err => console.error("❌ 数据库连接失败:", err));
+
+// 健康检查接口
+app.get('/health', (req, res) => res.status(200).send('OK'));
 
 // 2. 定义管理员模型
 const AdminSchema = new mongoose.Schema({
