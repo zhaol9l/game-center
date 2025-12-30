@@ -202,6 +202,31 @@ app.delete('/api/records', async (req, res) => {
     }
 });
 
+// 11. 注销账户接口
+app.delete('/api/delete-account', async (req, res) => {
+    try {
+        const { username, password } = req.body;
+        if (!username || !password) return res.status(400).json({ message: "缺少必要参数" });
+
+        const user = await Admin.findOne({ username });
+        if (!user) return res.status(400).json({ message: "用户不存在" });
+
+        // 验证密码
+        const isMatch = await bcrypt.compare(password, user.password);
+        if (!isMatch) return res.status(400).json({ message: "密码错误，无法注销" });
+
+        // 1. 删除用户的所有记录
+        await Record.deleteMany({ owner: username });
+        
+        // 2. 删除用户账号
+        await Admin.deleteOne({ username });
+
+        res.json({ message: "账号及其数据已永久删除" });
+    } catch (err) {
+        res.status(500).json({ message: "注销失败: " + err.message });
+    }
+});
+
 // 7. 托管前端静态文件
 app.use(express.static(path.join(__dirname, '/')));
 

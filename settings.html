@@ -587,11 +587,38 @@
             </div>
         </div>
 
+        <div class="settings-section" style="border: 1px solid rgba(244, 67, 54, 0.3); padding: 20px; border-radius: 15px; background: rgba(244, 67, 54, 0.05);">
+            <h2 style="color: #f44336;" id="secDangerTitle">⚠️ 危险区域</h2>
+            <div class="setting-item" style="border: none;">
+                <div class="setting-info">
+                    <h3 id="itemDeleteAcc">注销账户</h3>
+                    <p id="itemDeleteAccDesc">永久删除您的账号及所有云端游戏记录，此操作不可撤销</p>
+                </div>
+                <button class="btn-action" style="background: #f44336; border-color: #f44336; color: white;" onclick="showDeleteAcc()" id="btnDeleteAcc">立即注销</button>
+            </div>
+        </div>
+
         <button class="btn-save" onclick="saveSettings()">保存更改</button>
         <button class="btn-save" style="background: #333; margin-top: 15px;" onclick="handleLogout()" id="btnLogout">退出登录</button>
     </div>
 
-    <div id="toast">
+    <!-- 注销确认弹窗 -->
+        <div id="deleteAccModal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.8); z-index:2000; justify-content:center; align-items:center;">
+            <div class="settings-container" style="width:350px; margin:0; border: 1px solid #f44336;">
+                <h2 style="margin-top:0; color: #f44336;" id="modalDeleteTitle">注销账户确认</h2>
+                <p style="font-size: 13px; color: #ccc; margin-bottom: 20px;" id="modalDeleteDesc">请输入您的登录密码以确认身份。注销后，您的所有数据将被永久删除。</p>
+                <div class="setting-item" style="flex-direction:column; align-items:flex-start; border:none;">
+                    <label style="font-size:13px; color:#aaa; margin-bottom:5px;" id="lblConfirmDeletePwd">登录密码</label>
+                    <input type="password" id="deleteAccPwd" style="width:100%; box-sizing:border-box;" placeholder="请输入登录密码">
+                </div>
+                <div style="display:flex; gap:10px; margin-top:20px;">
+                    <button class="btn-save" style="flex:1; margin:0; background:#f44336;" onclick="handleDeleteAccount()" id="btnConfirmDelete">确认注销</button>
+                    <button class="btn-save" style="flex:1; margin:0; background:#444;" onclick="hideDeleteAcc()" id="btnCancelDelete">取消</button>
+                </div>
+            </div>
+        </div>
+
+        <div id="toast">
         <div class="loader"></div>
         <div style="font-size: 18px; font-weight: bold;">✅ 设置已保存！</div>
         <div class="countdown-text">正在前往首页... <span id="seconds">1.5</span>s</div>
@@ -669,6 +696,15 @@
                 lblConfirmPwd: "确认新密钥",
                 btnSavePwd: "保存新密钥",
                 btnCancelPwd: "取消",
+                secDangerTitle: "⚠️ 危险区域",
+                itemDeleteAcc: "注销账户",
+                itemDeleteAccDesc: "永久删除您的账号及所有云端游戏记录，此操作不可撤销",
+                btnDeleteAcc: "立即注销",
+                modalDeleteTitle: "注销账户确认",
+                modalDeleteDesc: "请输入您的登录密码以确认身份。注销后，您的所有数据将被永久删除。",
+                lblConfirmDeletePwd: "登录密码",
+                btnConfirmDelete: "确认注销",
+                btnCancelDelete: "取消",
                 pwdErrorOld: "当前密钥错误！",
                 pwdErrorMatch: "两次输入的新密钥不一致！",
                 pwdErrorShort: "新密钥至少需要 6 位！",
@@ -720,6 +756,15 @@
                 lblConfirmPwd: "Confirm New Password",
                 btnSavePwd: "Save Password",
                 btnCancelPwd: "Cancel",
+                secDangerTitle: "⚠️ Danger Zone",
+                itemDeleteAcc: "Delete Account",
+                itemDeleteAccDesc: "Permanently delete your account and all cloud records. This cannot be undone.",
+                btnDeleteAcc: "Delete Now",
+                modalDeleteTitle: "Account Deletion",
+                modalDeleteDesc: "Please enter your password to confirm. All your data will be permanently removed.",
+                lblConfirmDeletePwd: "Password",
+                btnConfirmDelete: "Confirm",
+                btnCancelDelete: "Cancel",
                 pwdErrorOld: "Incorrect old password!",
                 pwdErrorMatch: "Passwords do not match!",
                 pwdErrorShort: "Password must be at least 6 characters!",
@@ -747,6 +792,15 @@
                 itemUserDesc: "表示名を変更する",
                 itemSecurityLevel: "セキュリティレベル",
                 itemSecurityLevelDesc: "二段階認証を有効にすることをお勧めします",
+                secDangerTitle: "⚠️ 危険ゾーン",
+                itemDeleteAcc: "アカウント削除",
+                itemDeleteAccDesc: "アカウントとすべてのクラウド記録を永久に削除します。この操作は取り消せません。",
+                btnDeleteAcc: "今すぐ削除",
+                modalDeleteTitle: "アカウント削除の確認",
+                modalDeleteDesc: "本人確認のためパスワードを入力してください。すべてのデータが永久に削除されます。",
+                lblConfirmDeletePwd: "パスワード",
+                btnConfirmDelete: "削除する",
+                btnCancelDelete: "キャンセル",
                 item2FA: "ログイン保護 (2FA)",
                 item2FADesc: "新しいデバイスでのログインに認証コードが必要",
                 itemPassword: "ログインパスワード",
@@ -984,6 +1038,48 @@
 
         function hideChangePwd() {
             document.getElementById('changePwdModal').style.display = 'none';
+        }
+
+        // 注销账户相关
+        function showDeleteAcc() {
+            document.getElementById('deleteAccModal').style.display = 'flex';
+        }
+        function hideDeleteAcc() {
+            document.getElementById('deleteAccModal').style.display = 'none';
+        }
+
+        async function handleDeleteAccount() {
+            const password = document.getElementById('deleteAccPwd').value;
+            const username = localStorage.getItem('currentAdmin');
+
+            if (!password) {
+                alert('请输入密码以确认注销');
+                return;
+            }
+
+            if (!confirm('警告：此操作将永久删除您的账户和所有数据！确定要继续吗？')) {
+                return;
+            }
+
+            try {
+                const res = await fetch('/api/delete-account', {
+                    method: 'DELETE',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username, password })
+                });
+
+                const data = await res.json();
+                if (res.ok) {
+                    alert(data.message);
+                    localStorage.clear();
+                    window.location.href = 'admin_auth.html';
+                } else {
+                    alert(data.message || '注销失败');
+                }
+            } catch (err) {
+                console.error("注销请求失败:", err);
+                alert('网络错误，请稍后重试');
+            }
         }
 
         async function handleChangePwd() {
