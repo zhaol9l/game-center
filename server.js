@@ -85,22 +85,26 @@ app.post('/api/login', async (req, res) => {
 app.post('/api/records', async (req, res) => {
     try {
         const { username, records } = req.body;
-        if (!username) return res.status(400).json({ message: "未登录" });
+        console.log(`📥 收到来自用户 [${username}] 的同步请求, 记录条数: ${records ? records.length : 0}`);
 
-        // 过滤掉可能存在的 _id 字段，防止 MongoDB 报错
-        const recordsToSave = records.map(r => {
-            const { _id, ...rest } = r; // 剔除可能存在的旧 ID
-            return {
-                ...rest,
-                owner: String(username), // 强制转为字符串
-                time: new Date()
-            };
-        });
+        if (!username) return res.status(400).json({ message: "未登录" });
+        if (!records || !Array.isArray(records)) return res.status(400).json({ message: "无效的数据格式" });
+
+        // 彻底清理数据，只保留我们需要的业务字段，完全由云端生成新的 _id
+        const recordsToSave = records.map(r => ({
+            roleId: String(r.roleId || ""),
+            roleName: String(r.roleName || ""),
+            server: String(r.server || ""),
+            status: String(r.status || "待处理"),
+            owner: String(username),
+            time: r.time ? new Date(r.time) : new Date()
+        }));
 
         await Record.insertMany(recordsToSave);
+        console.log(`✅ 用户 [${username}] 的数据已成功存入数据库`);
         res.json({ message: "数据已同步至云端" });
     } catch (err) {
-        console.error("Save Records Error:", err);
+        console.error("❌ Save Records Error:", err.message);
         res.status(500).json({ message: "同步失败: " + err.message });
     }
 });
