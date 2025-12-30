@@ -1335,11 +1335,15 @@
             // 如果有正在运行的循环定时器，先清除
             if (resultsCycleTimer) clearTimeout(resultsCycleTimer);
 
+            const saved = JSON.parse(localStorage.getItem('gameCenterSettings')) || { language: 'zh' };
+            const lang = saved.language || 'zh';
+            const dict = i18n[lang] || i18n['zh'];
+            const applyingText = dict.applying || '申请中';
+
             const submitBtn = document.querySelector('button[type="submit"]');
             if (submitBtn) {
                 submitBtn.disabled = true;
-                const saved = JSON.parse(localStorage.getItem('gameCenterSettings')) || { language: 'zh' };
-                submitBtn.textContent = saved.language === 'en' ? 'Processing...' : (saved.language === 'jp' ? '処理中...' : '处理中...');
+                submitBtn.textContent = lang === 'en' ? 'Processing...' : (lang === 'jp' ? '処理中...' : '处理中...');
             }
 
             const userData = {
@@ -1432,8 +1436,10 @@
                 // 恢复按钮状态
                 if (submitBtn) {
                     submitBtn.disabled = false;
-                    const saved = JSON.parse(localStorage.getItem('gameCenterSettings')) || { language: 'zh' };
-                    submitBtn.textContent = i18n[saved.language || 'zh'].submit;
+                    const currentSaved = JSON.parse(localStorage.getItem('gameCenterSettings')) || { language: 'zh' };
+                    const currentLang = currentSaved.language || 'zh';
+                    const currentDict = i18n[currentLang] || i18n['zh'];
+                    submitBtn.innerHTML = currentDict.submit + `<span class="btn-plane">${currentDict.btnPlane}</span>`;
                 }
 
                 // --- 核心循环逻辑：10秒后开启“交叉淡入淡出” ---

@@ -143,21 +143,47 @@
         /* 数据卡片 */
         .stats-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            grid-template-columns: repeat(3, 1fr); /* 修改为三列，对应用户提到的三个统计 */
             gap: 20px;
-            margin-bottom: 40px;
+            margin-bottom: 30px;
         }
         .stat-card {
             background: var(--card-bg);
-            padding: 25px;
-            border-radius: 15px;
+            padding: 20px;
+            border-radius: 16px;
             border: 1px solid var(--border);
             text-align: center;
-            transition: 0.3s;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            backdrop-filter: blur(10px);
+            position: relative;
+            overflow: hidden;
         }
-        .stat-card:hover { transform: translateY(-5px); border-color: var(--primary); }
-        .stat-value { font-size: 32px; font-weight: bold; color: var(--primary); margin: 10px 0; }
-        .stat-label { color: #888; font-size: 14px; }
+        .stat-card::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 4px;
+            background: var(--primary);
+            opacity: 0.5;
+        }
+        .stat-card:hover { 
+            transform: translateY(-5px); 
+            border-color: var(--primary);
+            box-shadow: 0 10px 20px rgba(0,0,0,0.2);
+        }
+        .stat-value { 
+            font-size: 36px; 
+            font-weight: 800; 
+            color: var(--primary); 
+            margin: 10px 0;
+            text-shadow: 0 0 15px rgba(76, 175, 80, 0.3);
+        }
+        .stat-label { 
+            color: #aaa; 
+            font-size: 14px; 
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
 
         /* 表格区域 */
         .admin-section {
@@ -342,10 +368,6 @@
             <div class="stat-card">
                 <div class="stat-value" id="topGame">---</div>
                 <div class="stat-label" id="lblTopGame">🔥 最受欢迎游戏</div>
-            </div>
-            <div class="stat-card">
-                <div class="stat-value" id="userRegCount">0</div>
-                <div class="stat-label" id="regTodayCount">今日新增: 0</div>
             </div>
         </div>
 
@@ -570,10 +592,14 @@
                 btns[1].textContent = dict.downloadBtn || "📥 下载报表";
             }
             
-            // 更新全站记录面板的按钮 (由于上面的面板新增了ID，这里的索引需要对应)
-            const globalSection = document.querySelectorAll('.admin-section')[2];
+            // 更新全站记录面板的按钮
+            const sections = document.querySelectorAll('.admin-section');
+            const globalSection = sections[sections.length - 1];
             if (globalSection) {
-                globalSection.querySelector('.btn-action').textContent = dict.refreshBtn;
+                const title = globalSection.querySelector('.section-title');
+                if (title) title.textContent = dict.sectionTitle;
+                const refreshBtn = globalSection.querySelector('.btn-action');
+                if (refreshBtn) refreshBtn.textContent = dict.refreshBtn;
             }
             document.getElementById('emptyTip').textContent = dict.emptyTip;
 
@@ -598,13 +624,19 @@
                 if (navAvatar) navAvatar.src = saved.avatar;
             }
 
-            // 登记统计
-            const regData = JSON.parse(localStorage.getItem('userRegistrations')) || [];
-            document.getElementById('userRegCount').textContent = regData.length;
-            document.getElementById('regTodayCount').textContent = `今日新增: ` + regData.filter(item => {
-                const today = new Date().toLocaleDateString();
-                return item.timestamp.includes(today);
-            }).length;
+            // 登记统计 (如果存在的话)
+            const regCountEl = document.getElementById('userRegCount');
+            if (regCountEl) {
+                const regData = JSON.parse(localStorage.getItem('userRegistrations')) || [];
+                regCountEl.textContent = regData.length;
+                const regTodayEl = document.getElementById('regTodayCount');
+                if (regTodayEl) {
+                    regTodayEl.textContent = `今日新增: ` + regData.filter(item => {
+                        const today = new Date().toLocaleDateString();
+                        return item.timestamp.includes(today);
+                    }).length;
+                }
+            }
 
             const userTableBody = document.getElementById('userRegTableBody');
             userTableBody.innerHTML = regData.map(item => `
