@@ -748,36 +748,56 @@
 
             emptyTip.style.display = 'none';
             tableBody.innerHTML = safeHistory.map(item => {
-                // 统一字段名读取并增加默认值
-                const id = item.id || '---';
+                // 优先使用前端生成的 id，如果没有（旧数据）则使用数据库的 _id
+                const displayId = item.id || (item._id ? item._id.slice(-6).toUpperCase() : '---');
+                const deleteId = item.id || item._id; // 用于删除请求的真实 ID
+                
                 const gameName = item.gameName || item.game || '未知游戏';
                 const adminName = item.adminName || item.admin || '系统分配';
-                const timestamp = item.timestamp || item.time || '未知时间';
+                const timestamp = item.timestamp || (item.time ? new Date(item.time).toLocaleString() : '未知时间');
                 const statusText = dict.statusProcessed || '已处理';
 
                 return `
                     <tr>
-                        <td><code>${id}</code></td>
+                        <td><code>${displayId}</code></td>
                         <td>${gameName}</td>
                         <td>${adminName}</td>
                         <td>${timestamp}</td>
                         <td><span class="status-badge status-success">${statusText}</span></td>
                         <td>
-                            <button class="btn-action" onclick="deleteRecord('${id}')">${dict.btnDelete}</button>
+                            <button class="btn-action" onclick="deleteRecord('${deleteId}')">${dict.btnDelete}</button>
                         </td>
                     </tr>
                 `;
             }).join('');
         }
 
-        function deleteRecord(id) {
+        async function deleteRecord(id) {
             const saved = JSON.parse(localStorage.getItem('gameCenterSettings')) || { language: 'zh' };
             const dict = i18n[saved.language || 'zh'];
+            const username = localStorage.getItem('currentAdmin') || localStorage.getItem('lastAdminUser');
+
             if (confirm(dict.confirmDelete)) {
-                let history = JSON.parse(localStorage.getItem('userSubmissionHistory')) || [];
-                history = history.filter(item => item.id !== id);
-                localStorage.setItem('userSubmissionHistory', JSON.stringify(history));
-                refreshData(dict);
+                try {
+                    // 1. 先尝试删除云端数据
+                    if (username) {
+                        const res = await fetch(`/api/records?username=${username}&id=${id}`, {
+                            method: 'DELETE'
+                        });
+                        if (!res.ok) throw new Error("云端删除失败");
+                    }
+
+                    // 2. 云端成功或无账号时，更新本地缓存
+                    let history = JSON.parse(localStorage.getItem('userSubmissionHistory')) || [];
+                    history = history.filter(item => (item.id || item._id) !== id);
+                    localStorage.setItem('userSubmissionHistory', JSON.stringify(history));
+                    
+                    // 3. 重新渲染
+                    refreshData(dict);
+                } catch (err) {
+                    console.error("删除失败:", err);
+                    alert("删除失败，请稍后重试");
+                }
             }
         }
 

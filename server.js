@@ -27,7 +27,8 @@ const Admin = mongoose.model('Admin', AdminSchema);
 
 // 3. 定义游戏记录模型
 const RecordSchema = new mongoose.Schema({
-    owner: { type: String, required: true }, // 确保是 String 类型
+    id: String, // 前端生成的唯一 ID
+    owner: { type: String, required: true },
     roleId: String,
     roleName: String,
     server: String,
@@ -92,6 +93,7 @@ app.post('/api/records', async (req, res) => {
 
         // 彻底清理数据，只保留我们需要的业务字段，完全由云端生成新的 _id
         const recordsToSave = records.map(r => ({
+            id: String(r.id || ""), // 保留前端生成的 ID
             roleId: String(r.roleId || ""),
             roleName: String(r.roleName || ""),
             server: String(r.server || ""),
@@ -122,14 +124,27 @@ app.get('/api/records', async (req, res) => {
     }
 });
 
-// 清理记录
+// 清理记录 (支持清理全部或单条)
 app.delete('/api/records', async (req, res) => {
     try {
-        const { username } = req.query;
-        await Record.deleteMany({ owner: username });
-        res.json({ message: "记录已清空" });
+        const { username, id } = req.query;
+        if (!username) return res.status(400).json({ message: "用户名必填" });
+
+        if (id) {
+            // 尝试通过自定义 id 或 MongoDB 的 _id 删除
+            const query = { owner: username, $or: [{ id: id }] };
+            if (mongoose.Types.ObjectId.isValid(id)) {
+                query.$or.push({ _id: id });
+            }
+            await Record.deleteOne(query);
+            res.json({ message: "记录已删除" });
+        } else {
+            // 清空全部
+            await Record.deleteMany({ owner: username });
+            res.json({ message: "记录已清空" });
+        }
     } catch (err) {
-        res.status(500).json({ message: "清理失败" });
+        res.status(500).json({ message: "删除失败" });
     }
 });
 
