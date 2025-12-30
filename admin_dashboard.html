@@ -625,9 +625,9 @@
             }
 
             // 登记统计 (如果存在的话)
+            const regData = JSON.parse(localStorage.getItem('userRegistrations')) || [];
             const regCountEl = document.getElementById('userRegCount');
             if (regCountEl) {
-                const regData = JSON.parse(localStorage.getItem('userRegistrations')) || [];
                 regCountEl.textContent = regData.length;
                 const regTodayEl = document.getElementById('regTodayCount');
                 if (regTodayEl) {
@@ -639,17 +639,19 @@
             }
 
             const userTableBody = document.getElementById('userRegTableBody');
-            userTableBody.innerHTML = regData.map(item => `
-                <tr>
-                    <td><code>${item.userName}</code></td>
-                    <td>${item.game}</td>
-                    <td>${item.admin}</td>
-                    <td>${item.timestamp}</td>
-                    <td>
-                        <button class="btn-action" onclick="deleteReg('${item.id}')">${dict.btnDelete}</button>
-                    </td>
-                </tr>
-            `).join('');
+            if (userTableBody) {
+                userTableBody.innerHTML = regData.map(item => `
+                    <tr>
+                        <td><code>${item.userName}</code></td>
+                        <td>${item.game}</td>
+                        <td>${item.admin}</td>
+                        <td>${item.timestamp}</td>
+                        <td>
+                            <button class="btn-action" onclick="deleteReg('${item.id}')">${dict.btnDelete}</button>
+                        </td>
+                    </tr>
+                `).join('');
+            }
 
             refreshData(dict);
         }
@@ -743,23 +745,26 @@
                 dict = i18n[saved.language || 'zh'];
             }
             
-            // 1. 显示加载状态
             const tableBody = document.getElementById('adminTableBody');
             const refreshBtn = document.querySelector('.btn-action[onclick*="refreshData"]') || document.querySelector('.btn-action[onclick*="syncFromCloud"]');
             
-            if (tableBody) tableBody.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:50px;color:#888;">正在同步云端数据...</td></tr>';
-            if (refreshBtn) {
-                refreshBtn.disabled = true;
-                refreshBtn.innerHTML = '⌛ 同步中...';
+            // 1. 显示加载状态 (仅在初次或手动刷新时)
+            if (tableBody && tableBody.children.length === 0) {
+                tableBody.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:50px;color:#888;">正在加载数据...</td></tr>';
             }
 
-            // 2. 从云端同步属于当前管理员的最新记录
+            // 2. 优先尝试从云端同步
             const username = localStorage.getItem('currentAdmin') || localStorage.getItem('lastAdminUser');
             if (username) {
+                if (refreshBtn) {
+                    refreshBtn.disabled = true;
+                    refreshBtn.innerHTML = '⌛ 同步中...';
+                }
                 try {
                     const res = await fetch(`/api/records?username=${username}`);
                     if (res.ok) {
                         const cloudHistory = await res.json();
+                        // 彻底同步云端数据到本地缓存
                         localStorage.setItem('userSubmissionHistory', JSON.stringify(cloudHistory));
                         renderAdminTable(cloudHistory, dict);
                         if (refreshBtn) {
@@ -773,8 +778,8 @@
                 }
             }
 
-            // 3. 如果云端失败，再回退到本地
-            let history = JSON.parse(localStorage.getItem('userSubmissionHistory')) || [];
+            // 3. 如果未登录或云端失败，使用本地缓存渲染
+            const history = JSON.parse(localStorage.getItem('userSubmissionHistory')) || [];
             renderAdminTable(history, dict);
             if (refreshBtn) {
                 refreshBtn.disabled = false;
@@ -785,46 +790,54 @@
         function renderAdminTable(history, dict) {
             const tableBody = document.getElementById('adminTableBody');
             const emptyTip = document.getElementById('emptyTip');
+            if (!tableBody) return;
+
+            const safeHistory = Array.isArray(history) ? history : [];
             
-            const safeHistory = history || [];
-            document.getElementById('totalCount').textContent = safeHistory.length;
+            // 更新统计卡片 (全站申请记录)
+            const totalCountEl = document.getElementById('totalCount');
+            const todayCountEl = document.getElementById('todayCount');
+            const topGameEl = document.getElementById('topGame');
+
+            if (totalCountEl) totalCountEl.textContent = safeHistory.length;
             
-            // 计算今日新增
+            // 计算今日新增 (兼容多种日期格式)
             const today = new Date().toLocaleDateString();
             const todayRecords = safeHistory.filter(item => {
-                const itemDate = item.timestamp ? item.timestamp.split(' ')[0] : (item.time ? new Date(item.time).toLocaleDateString() : '');
-                return itemDate.includes(today) || itemDate === today;
+                const itemDate = item.time ? new Date(item.time).toLocaleDateString() : 
+                                (item.timestamp ? item.timestamp.split(' ')[0] : '');
+                return itemDate === today || (item.timestamp && item.timestamp.includes(today));
             });
-            document.getElementById('todayCount').textContent = todayRecords.length;
+            if (todayCountEl) todayCountEl.textContent = todayRecords.length;
 
             // 计算热门游戏
-            if (safeHistory.length > 0) {
-                const gameCounts = {};
-                safeHistory.forEach(item => {
-                    const name = item.gameName || '未知游戏';
-                    gameCounts[name] = (gameCounts[name] || 0) + 1;
-                });
-                const topGame = Object.entries(gameCounts).sort((a, b) => b[1] - a[1])[0][0];
-                document.getElementById('topGame').textContent = topGame;
-            } else {
-                document.getElementById('topGame').textContent = '---';
+            if (topGameEl) {
+                if (safeHistory.length > 0) {
+                    const gameCounts = {};
+                    safeHistory.forEach(item => {
+                        const name = item.gameName || '未知游戏';
+                        gameCounts[name] = (gameCounts[name] || 0) + 1;
+                    });
+                    const topGame = Object.entries(gameCounts).sort((a, b) => b[1] - a[1])[0][0];
+                    topGameEl.textContent = topGame;
+                } else {
+                    topGameEl.textContent = '---';
+                }
             }
 
             if (safeHistory.length === 0) {
                 tableBody.innerHTML = '';
-                emptyTip.style.display = 'block';
+                if (emptyTip) emptyTip.style.display = 'block';
                 return;
             }
 
-            emptyTip.style.display = 'none';
+            if (emptyTip) emptyTip.style.display = 'none';
             tableBody.innerHTML = safeHistory.map(item => {
-                // 优先使用前端生成的 id，如果没有（旧数据）则使用数据库的 _id
                 const displayId = item.id || (item._id ? item._id.slice(-6).toUpperCase() : '---');
-                const deleteId = item.id || item._id; // 用于删除请求的真实 ID
-                
+                const deleteId = item.id || item._id; 
                 const gameName = item.gameName || '未知游戏';
                 const adminName = item.owner || item.adminName || '用户提交';
-                const timestamp = item.timestamp || (item.time ? new Date(item.time).toLocaleString() : '未知时间');
+                const timestamp = item.time ? new Date(item.time).toLocaleString() : (item.timestamp || '未知时间');
                 const statusText = dict.statusProcessed || '已处理';
 
                 return `

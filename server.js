@@ -139,15 +139,21 @@ app.post('/api/update-profile', async (req, res) => {
 app.post('/api/records', async (req, res) => {
     try {
         const { username, records } = req.body;
-        console.log(`📥 收到来自用户 [${username}] 的同步请求, 记录条数: ${records ? records.length : 0}`);
+        
+        if (!username) {
+            console.warn("⚠️ 收到无用户名的同步请求");
+            return res.status(400).json({ message: "未登录" });
+        }
+        if (!records || !Array.isArray(records)) {
+            return res.status(400).json({ message: "无效的数据格式" });
+        }
 
-        if (!username) return res.status(400).json({ message: "未登录" });
-        if (!records || !Array.isArray(records)) return res.status(400).json({ message: "无效的数据格式" });
+        console.log(`📥 正在同步用户 [${username}] 的数据, 条数: ${records.length}`);
 
         // 彻底清理数据，只保留我们需要的业务字段，完全由云端生成新的 _id
         const recordsToSave = records.map(r => ({
             id: String(r.id || ""), // 保留前端生成的 ID
-            gameName: String(r.gameName || ""), // 增加游戏名称同步
+            gameName: String(r.gameName || ""), 
             roleId: String(r.roleId || ""),
             roleName: String(r.roleName || ""),
             server: String(r.server || ""),
@@ -156,8 +162,20 @@ app.post('/api/records', async (req, res) => {
             time: r.time ? new Date(r.time) : new Date()
         }));
 
-        await Record.insertMany(recordsToSave);
-        console.log(`✅ 用户 [${username}] 的数据已成功存入数据库`);
+        // 使用 upsert 逻辑防止重复 (如果前端有唯一 ID)
+        for (const record of recordsToSave) {
+            if (record.id) {
+                await Record.findOneAndUpdate(
+                    { id: record.id, owner: username },
+                    record,
+                    { upsert: true, new: true }
+                );
+            } else {
+                await new Record(record).save();
+            }
+        }
+
+        console.log(`✅ 用户 [${username}] 的数据同步完成`);
         res.json({ message: "数据已同步至云端" });
     } catch (err) {
         console.error("❌ Save Records Error:", err.message);
