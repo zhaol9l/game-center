@@ -508,7 +508,9 @@
                 btnDelete: "删除",
                 confirmDelete: "确定要删除这笔申请记录吗？",
                 statusProcessed: "已处理",
-                emptyTip: "暂无申请数据"
+                emptyTip: "暂无申请数据",
+                btnClearAll: "🗑️ 一键清空",
+                confirmClearAll: "⚠️ 确定要永久删除【全站】所有申请记录吗？此操作不可恢复！"
             },
             en: {
                 navHome: "🏠 Home",
@@ -531,7 +533,9 @@
                 btnDelete: "Delete",
                 confirmDelete: "Are you sure you want to delete this record?",
                 statusProcessed: "Success",
-                emptyTip: "No records found"
+                emptyTip: "No records found",
+                btnClearAll: "🗑️ Clear All",
+                confirmClearAll: "⚠️ Are you sure you want to PERMANENTLY delete ALL records? This cannot be undone!"
             },
             jp: {
                 navHome: "🏠 ホーム",
@@ -554,7 +558,9 @@
                 btnDelete: "削除",
                 confirmDelete: "この記録を削除してもよろしいですか？",
                 statusProcessed: "処理済み",
-                emptyTip: "データがありません"
+                emptyTip: "データがありません",
+                btnClearAll: "🗑️ 全て削除",
+                confirmClearAll: "⚠️ 全ての申請記録を永久に削除してもよろしいですか？この操作は取り消せません！"
             }
         };
 
@@ -598,8 +604,25 @@
             if (globalSection) {
                 const title = globalSection.querySelector('.section-title');
                 if (title) title.textContent = dict.sectionTitle;
-                const refreshBtn = globalSection.querySelector('.btn-action');
-                if (refreshBtn) refreshBtn.textContent = dict.refreshBtn;
+                const btnsContainer = globalSection.querySelector('.section-header div:last-child');
+                if (btnsContainer) {
+                    const refreshBtn = btnsContainer.querySelector('button:nth-child(1)');
+                    const exportBtn = btnsContainer.querySelector('button:nth-child(2)');
+                    if (refreshBtn) refreshBtn.textContent = dict.refreshBtn;
+                    if (exportBtn) exportBtn.textContent = dict.downloadBtn || "📥 导出 CSV";
+                    
+                    // 动态更新或添加清空按钮
+                    let clearBtn = document.getElementById('btnClearAll');
+                    if (!clearBtn) {
+                        clearBtn = document.createElement('button');
+                        clearBtn.id = 'btnClearAll';
+                        clearBtn.className = 'btn-action';
+                        clearBtn.style.background = '#f44336';
+                        clearBtn.onclick = clearAllRecords;
+                        btnsContainer.appendChild(clearBtn);
+                    }
+                    clearBtn.textContent = dict.btnClearAll;
+                }
             }
             document.getElementById('emptyTip').textContent = dict.emptyTip;
 
@@ -853,6 +876,34 @@
                     </tr>
                 `;
             }).join('');
+        }
+
+        async function clearAllRecords() {
+            const saved = JSON.parse(localStorage.getItem('gameCenterSettings')) || { language: 'zh' };
+            const dict = i18n[saved.language || 'zh'];
+            const username = localStorage.getItem('currentAdmin') || localStorage.getItem('lastAdminUser');
+
+            if (confirm(dict.confirmClearAll)) {
+                try {
+                    // 1. 调用后端接口清空云端数据
+                    if (username) {
+                        const res = await fetch(`/api/records?username=${username}`, {
+                            method: 'DELETE'
+                        });
+                        if (!res.ok) throw new Error("云端清空失败");
+                    }
+
+                    // 2. 清空本地缓存
+                    localStorage.setItem('userSubmissionHistory', JSON.stringify([]));
+                    
+                    // 3. 重新渲染
+                    refreshData(dict);
+                    showToast('✅ 所有记录已成功清空');
+                } catch (err) {
+                    console.error("清空失败:", err);
+                    alert("操作失败，请稍后重试");
+                }
+            }
         }
 
         async function deleteRecord(id) {
