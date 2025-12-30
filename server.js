@@ -6,7 +6,8 @@ const path = require('path');
 const fs = require('fs');
 
 const app = express();
-app.use(express.json());
+app.use(express.json({ limit: '500mb' }));
+app.use(express.urlencoded({ limit: '500mb', extended: true }));
 app.use(cors());
 
 // 1. 数据库连接
@@ -36,7 +37,7 @@ const RecordSchema = new mongoose.Schema({
     roleName: String,
     server: String,
     status: String,
-    time: { type: Date, default: Date.now }
+    time: { type: Date, default: Date.now, expires: 604800 } // 7天后自动删除 (7 * 24 * 60 * 60)
 });
 const Record = mongoose.model('Record', RecordSchema);
 
