@@ -752,8 +752,8 @@
                 const displayId = item.id || (item._id ? item._id.slice(-6).toUpperCase() : '---');
                 const deleteId = item.id || item._id; // 用于删除请求的真实 ID
                 
-                const gameName = item.gameName || item.game || '未知游戏';
-                const adminName = item.adminName || item.admin || '系统分配';
+                const gameName = item.gameName || '未知游戏';
+                const adminName = item.owner || item.adminName || '用户提交';
                 const timestamp = item.timestamp || (item.time ? new Date(item.time).toLocaleString() : '未知时间');
                 const statusText = dict.statusProcessed || '已处理';
 

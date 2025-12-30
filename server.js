@@ -31,6 +31,7 @@ const Admin = mongoose.model('Admin', AdminSchema);
 const RecordSchema = new mongoose.Schema({
     id: String, // 前端生成的唯一 ID
     owner: { type: String, required: true },
+    gameName: String, // 游戏名称
     roleId: String,
     roleName: String,
     server: String,
@@ -146,6 +147,7 @@ app.post('/api/records', async (req, res) => {
         // 彻底清理数据，只保留我们需要的业务字段，完全由云端生成新的 _id
         const recordsToSave = records.map(r => ({
             id: String(r.id || ""), // 保留前端生成的 ID
+            gameName: String(r.gameName || ""), // 增加游戏名称同步
             roleId: String(r.roleId || ""),
             roleName: String(r.roleName || ""),
             server: String(r.server || ""),
