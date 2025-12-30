@@ -332,24 +332,20 @@
     <div class="dashboard-container">
         <div class="stats-grid">
             <div class="stat-card">
-                <div class="stat-label">今日申请数</div>
-                <div class="stat-value" id="todayCount">0</div>
-                <div class="stat-label">较昨日 +0%</div>
-            </div>
-            <div class="stat-card">
-                <div class="stat-label">总申请总量</div>
                 <div class="stat-value" id="totalCount">0</div>
-                <div class="stat-label">全站实时汇总</div>
+                <div class="stat-label" id="lblTotalRecords">📜 累计申请记录</div>
             </div>
             <div class="stat-card">
-                <div class="stat-label">已登记用户数</div>
+                <div class="stat-value" id="todayCount">0</div>
+                <div class="stat-label" id="lblTodayRecords">📅 今日新增申请</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value" id="topGame">---</div>
+                <div class="stat-label" id="lblTopGame">🔥 最受欢迎游戏</div>
+            </div>
+            <div class="stat-card">
                 <div class="stat-value" id="userRegCount">0</div>
                 <div class="stat-label" id="regTodayCount">今日新增: 0</div>
-            </div>
-            <div class="stat-card">
-                <div class="stat-label">当前在线管理员</div>
-                <div class="stat-value">1</div>
-                <div class="stat-label">系统运行正常</div>
             </div>
         </div>
 
@@ -472,6 +468,9 @@
                 navHistory: "📜 历史提交记录",
                 navAdmin: "🛡️ 管理面板",
                 navSettings: "⚙️ 设置",
+                lblTotalRecords: "📜 累计申请记录",
+                lblTodayRecords: "📅 今日新增申请",
+                lblTopGame: "🔥 最受欢迎游戏",
                 pageTitle: "🛡️ 管理员面板 - GAME CENTER",
                 sectionTitle: "📝 全站申请记录 (实时)",
                 regSectionTitle: "👤 每日申请记录",
@@ -495,6 +494,9 @@
                 navHistory: "📜 History",
                 navAdmin: "🛡️ Admin",
                 navSettings: "⚙️ Settings",
+                lblTotalRecords: "📜 Total Records",
+                lblTodayRecords: "📅 Today's New",
+                lblTopGame: "🔥 Top Game",
                 pageTitle: "🛡️ Admin Panel - GAME CENTER",
                 sectionTitle: "📝 Global Application Records",
                 refreshBtn: "🔄 Refresh",
@@ -515,6 +517,9 @@
                 navHistory: "📜 申請履歴",
                 navAdmin: "🛡️ 管理パネル",
                 navSettings: "⚙️ 設定",
+                lblTotalRecords: "📜 累計申請数",
+                lblTodayRecords: "📅 本日の新規",
+                lblTopGame: "🔥 人気ゲーム",
                 pageTitle: "🛡️ 管理パネル - GAME CENTER",
                 sectionTitle: "📝 全体申請履歴 (リアルタイム)",
                 refreshBtn: "🔄 更新",
@@ -552,6 +557,9 @@
 
             // 页面内容
             document.querySelector('.section-title').textContent = dict.sectionTitle;
+            if (document.getElementById('lblTotalRecords')) document.getElementById('lblTotalRecords').textContent = dict.lblTotalRecords;
+            if (document.getElementById('lblTodayRecords')) document.getElementById('lblTodayRecords').textContent = dict.lblTodayRecords;
+            if (document.getElementById('lblTopGame')) document.getElementById('lblTopGame').textContent = dict.lblTopGame;
             
             // 更新每日申请记录面板标题和按钮
             const regSection = document.getElementById('regSection');
@@ -705,7 +713,13 @@
             
             // 1. 显示加载状态
             const tableBody = document.getElementById('adminTableBody');
+            const refreshBtn = document.querySelector('.btn-action[onclick*="refreshData"]') || document.querySelector('.btn-action[onclick*="syncFromCloud"]');
+            
             if (tableBody) tableBody.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:50px;color:#888;">正在同步云端数据...</td></tr>';
+            if (refreshBtn) {
+                refreshBtn.disabled = true;
+                refreshBtn.innerHTML = '⌛ 同步中...';
+            }
 
             // 2. 从云端同步属于当前管理员的最新记录
             const username = localStorage.getItem('currentAdmin') || localStorage.getItem('lastAdminUser');
@@ -714,10 +728,13 @@
                     const res = await fetch(`/api/records?username=${username}`);
                     if (res.ok) {
                         const cloudHistory = await res.json();
-                        // 无论云端有没有数据，都以云端为准彻底覆盖本地
                         localStorage.setItem('userSubmissionHistory', JSON.stringify(cloudHistory));
                         renderAdminTable(cloudHistory, dict);
-                        return; // 成功后退出
+                        if (refreshBtn) {
+                            refreshBtn.disabled = false;
+                            refreshBtn.innerHTML = '🔄 ' + (dict.refreshBtn || '刷新数据');
+                        }
+                        return;
                     }
                 } catch (err) {
                     console.error("同步云端数据失败:", err);
@@ -727,6 +744,10 @@
             // 3. 如果云端失败，再回退到本地
             let history = JSON.parse(localStorage.getItem('userSubmissionHistory')) || [];
             renderAdminTable(history, dict);
+            if (refreshBtn) {
+                refreshBtn.disabled = false;
+                refreshBtn.innerHTML = '🔄 ' + (dict.refreshBtn || '刷新数据');
+            }
         }
 
         function renderAdminTable(history, dict) {
@@ -735,10 +756,27 @@
             
             const safeHistory = history || [];
             document.getElementById('totalCount').textContent = safeHistory.length;
-            document.getElementById('todayCount').textContent = safeHistory.filter(item => {
-                const today = new Date().toLocaleDateString();
-                return item.timestamp && item.timestamp.includes(today);
-            }).length;
+            
+            // 计算今日新增
+            const today = new Date().toLocaleDateString();
+            const todayRecords = safeHistory.filter(item => {
+                const itemDate = item.timestamp ? item.timestamp.split(' ')[0] : (item.time ? new Date(item.time).toLocaleDateString() : '');
+                return itemDate.includes(today) || itemDate === today;
+            });
+            document.getElementById('todayCount').textContent = todayRecords.length;
+
+            // 计算热门游戏
+            if (safeHistory.length > 0) {
+                const gameCounts = {};
+                safeHistory.forEach(item => {
+                    const name = item.gameName || '未知游戏';
+                    gameCounts[name] = (gameCounts[name] || 0) + 1;
+                });
+                const topGame = Object.entries(gameCounts).sort((a, b) => b[1] - a[1])[0][0];
+                document.getElementById('topGame').textContent = topGame;
+            } else {
+                document.getElementById('topGame').textContent = '---';
+            }
 
             if (safeHistory.length === 0) {
                 tableBody.innerHTML = '';

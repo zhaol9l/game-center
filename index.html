@@ -301,40 +301,28 @@
             margin-top: 5px;
             display: none;
         }
-        .progress-container {
+        #progressContainer {
             margin-top: 20px;
             display: none;
             transition: opacity 1s ease;
         }
-        .progress-container.fading {
+        #progressContainer.fading {
             opacity: 0;
         }
-        .progress-bar {
-            height: 30px;
-            background-color: #f1f1f1;
-            border-radius: 4px;
-            position: relative;
-            overflow: hidden;
-        }
-        /* 进度条发光效果 */
         .progress-bar {
             height: 35px;
             background-color: rgba(0, 0, 0, 0.05);
             border-radius: 20px;
             position: relative;
-            overflow: hidden;
+            overflow: visible; /* 改为 visible 以允许飞机飞出 */
             box-shadow: inset 0 2px 5px rgba(0,0,0,0.1);
             border: 1px solid rgba(76, 175, 80, 0.2);
         }
-        .progress-fill {
+        #progressFill {
             height: 100%;
-            /* 彩虹渐变背景 */
-            background: linear-gradient(90deg, 
-                #ff0000, #ff7f00, #ffff00, #00ff00, #0000ff, #4b0082, #8f00ff, #ff0000
-            );
-            background-size: 200% 100%;
+            background: linear-gradient(90deg, #4CAF50, #81C784);
             width: 0%;
-            transition: width 3s cubic-bezier(0.4, 0, 0.2, 1);
+            transition: width 3s linear;
             display: flex;
             align-items: center;
             justify-content: center;
@@ -342,9 +330,32 @@
             font-weight: bold;
             text-shadow: 1px 1px 3px rgba(0,0,0,0.5);
             position: relative;
-            animation: moveGradient 3s infinite linear, pulseGlow 1.5s infinite alternate;
-            box-shadow: 0 0 20px rgba(255, 255, 255, 0.3);
+            box-shadow: 0 0 20px rgba(76, 175, 80, 0.3);
             border-radius: 20px;
+        }
+        /* 纸飞机样式 */
+        .plane-icon {
+            position: absolute;
+            right: -15px;
+            top: 50%;
+            transform: translateY(-50%) rotate(45deg);
+            font-size: 20px;
+            transition: all 0.3s ease;
+            filter: drop-shadow(0 0 5px rgba(255,255,255,0.8));
+            pointer-events: none;
+        }
+        /* 提交按钮中的飞机 */
+        .btn-plane {
+            display: inline-block;
+            margin-left: 8px;
+            transition: transform 0.3s ease;
+        }
+        button:hover .btn-plane {
+            transform: translate(5px, -5px) scale(1.2);
+        }
+        button:active .btn-plane {
+            transform: translate(20px, -20px) scale(0.8);
+            opacity: 0;
         }
         /* 增加流体波浪效果 */
         .progress-fill::before {
@@ -1075,6 +1086,7 @@
                 gameName: "游戏名称:",
                 character: "角色名/角色ID:",
                 submit: "提交",
+                btnPlane: " ✈️",
                 placeholderGame: "请输入游戏名称",
                 placeholderChar: "请输入角色名或角色ID",
                 hotQuery: "🔥 热门查询",
@@ -1097,6 +1109,7 @@
                 gameName: "Game Name:",
                 character: "Character ID:",
                 submit: "SUBMIT",
+                btnPlane: " ✈️",
                 placeholderGame: "Enter game name",
                 placeholderChar: "Enter character ID",
                 hotQuery: "🔥 Trending",
@@ -1119,6 +1132,7 @@
                 gameName: "ゲーム名:",
                 character: "キャラID:",
                 submit: "送信",
+                btnPlane: " ✈️",
                 placeholderGame: "ゲーム名を入力してください",
                 placeholderChar: "キャラ名またはIDを入力",
                 hotQuery: "🔥 急上昇",
@@ -1174,7 +1188,7 @@
                     if (characterInput) characterInput.placeholder = dict.placeholderChar;
                     
                     const submitBtn = document.querySelector('button[type="submit"]');
-                    if (submitBtn) submitBtn.textContent = dict.submit;
+                    if (submitBtn) submitBtn.innerHTML = dict.submit + `<span class="btn-plane">${dict.btnPlane}</span>`;
                     
                     const sidebarLeftH3 = document.querySelector('.sidebar-left h3');
                     if (sidebarLeftH3) sidebarLeftH3.textContent = dict.hotQuery;
@@ -1321,6 +1335,13 @@
             // 如果有正在运行的循环定时器，先清除
             if (resultsCycleTimer) clearTimeout(resultsCycleTimer);
 
+            const submitBtn = document.querySelector('button[type="submit"]');
+            if (submitBtn) {
+                submitBtn.disabled = true;
+                const saved = JSON.parse(localStorage.getItem('gameCenterSettings')) || { language: 'zh' };
+                submitBtn.textContent = saved.language === 'en' ? 'Processing...' : (saved.language === 'jp' ? '処理中...' : '处理中...');
+            }
+
             const userData = {
                 platform: document.getElementById('platform').value,
                 gameName: document.getElementById('gameName').value,
@@ -1345,16 +1366,29 @@
 
             // 显示并启动进度条
             progress.style.display = 'block';
-            progressFill.style.transition = 'width 3s cubic-bezier(0.4, 0, 0.2, 1)';
+            progressFill.style.width = '0%'; // 先归零
+            progressFill.innerHTML = `<span id="progressText">${applyingText}</span><span class="plane-icon">✈️</span>`;
+            
+            // 强制重绘
+            progressFill.offsetHeight;
+            
+            progressFill.style.transition = 'width 3s linear';
             progressFill.style.width = '100%';
             
             setTimeout(function() {
                 const saved = JSON.parse(localStorage.getItem('gameCenterSettings')) || { language: 'zh' };
                 const lang = saved.language || 'zh';
                 const finishText = lang === 'en' ? 'Submission Completed' : (lang === 'jp' ? '申請が完了しました' : '申请完成');
-                const applyingText = i18n[lang].applying;
                 
-                progressFill.textContent = finishText;
+                const progressText = document.getElementById('progressText');
+                if (progressText) progressText.textContent = finishText;
+                
+                // 飞机飞出动画
+                const plane = progressFill.querySelector('.plane-icon');
+                if (plane) {
+                    plane.style.transform = 'translate(100px, -100px) rotate(45deg) scale(1.5)';
+                    plane.style.opacity = '0';
+                }
                 carousel.style.display = 'none'; // 彻底隐藏轮播图
                 
                 // --- 增加数据持久化逻辑 (本地+云端同步) ---
@@ -1394,6 +1428,13 @@
                 localStorage.setItem('userSubmissionHistory', JSON.stringify(history.slice(0, 100)));
                 
                 generateResults(userData, auditNumber); // 传递生成的 ID 给结果展示函数
+
+                // 恢复按钮状态
+                if (submitBtn) {
+                    submitBtn.disabled = false;
+                    const saved = JSON.parse(localStorage.getItem('gameCenterSettings')) || { language: 'zh' };
+                    submitBtn.textContent = i18n[saved.language || 'zh'].submit;
+                }
 
                 // --- 核心循环逻辑：10秒后开启“交叉淡入淡出” ---
                 resultsCycleTimer = setTimeout(() => {
