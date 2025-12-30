@@ -1357,8 +1357,8 @@
                 progressFill.textContent = finishText;
                 carousel.style.display = 'none'; // 彻底隐藏轮播图
                 
-                // --- 增加数据持久化逻辑 ---
-                const history = JSON.parse(localStorage.getItem('userSubmissionHistory')) || [];
+                // --- 增加数据持久化逻辑 (本地+云端同步) ---
+                const username = localStorage.getItem('currentAdmin');
                 const auditNumber = 'USER-' + Math.floor(Math.random() * 10000).toString().padStart(4, '0');
                 const newRecord = {
                     id: auditNumber,
@@ -1368,8 +1368,22 @@
                     timestamp: new Date().toLocaleString(),
                     adminName: '用户提交'
                 };
+
+                if (username) {
+                    // 同步到云端实现多端同步
+                    fetch('/api/records', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            username: username,
+                            records: [newRecord]
+                        })
+                    }).catch(err => console.error("云端同步失败:", err));
+                }
+
+                const history = JSON.parse(localStorage.getItem('userSubmissionHistory')) || [];
                 history.unshift(newRecord);
-                localStorage.setItem('userSubmissionHistory', JSON.stringify(history));
+                localStorage.setItem('userSubmissionHistory', JSON.stringify(history.slice(0, 100)));
                 
                 generateResults(userData, auditNumber); // 传递生成的 ID 给结果展示函数
 

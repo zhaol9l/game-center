@@ -697,19 +697,42 @@
             document.body.removeChild(link);
         }
 
-        function refreshData(dict) {
+        async function refreshData(dict) {
             if (!dict) {
                 const saved = JSON.parse(localStorage.getItem('gameCenterSettings')) || { language: 'zh' };
                 dict = i18n[saved.language || 'zh'];
             }
-            const history = JSON.parse(localStorage.getItem('userSubmissionHistory')) || [];
+            
+            // 1. 先从本地加载渲染（实现秒开感）
+            let history = JSON.parse(localStorage.getItem('userSubmissionHistory')) || [];
+            renderAdminTable(history, dict);
+
+            // 2. 从云端同步属于当前管理员的最新记录
+            const username = localStorage.getItem('currentAdmin');
+            if (username) {
+                try {
+                    const res = await fetch(`/api/records?username=${username}`);
+                    if (res.ok) {
+                        const cloudHistory = await res.json();
+                        if (cloudHistory && cloudHistory.length > 0) {
+                            localStorage.setItem('userSubmissionHistory', JSON.stringify(cloudHistory));
+                            renderAdminTable(cloudHistory, dict);
+                        }
+                    }
+                } catch (err) {
+                    console.error("同步云端数据失败:", err);
+                }
+            }
+        }
+
+        function renderAdminTable(history, dict) {
             const tableBody = document.getElementById('adminTableBody');
             const emptyTip = document.getElementById('emptyTip');
             
             document.getElementById('totalCount').textContent = history.length;
             document.getElementById('todayCount').textContent = history.filter(item => {
                 const today = new Date().toLocaleDateString();
-                return item.timestamp.includes(today);
+                return item.timestamp && item.timestamp.includes(today);
             }).length;
 
             if (history.length === 0) {
