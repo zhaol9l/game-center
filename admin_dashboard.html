@@ -733,31 +733,41 @@
             const tableBody = document.getElementById('adminTableBody');
             const emptyTip = document.getElementById('emptyTip');
             
-            document.getElementById('totalCount').textContent = history.length;
-            document.getElementById('todayCount').textContent = history.filter(item => {
+            const safeHistory = history || [];
+            document.getElementById('totalCount').textContent = safeHistory.length;
+            document.getElementById('todayCount').textContent = safeHistory.filter(item => {
                 const today = new Date().toLocaleDateString();
                 return item.timestamp && item.timestamp.includes(today);
             }).length;
 
-            if (history.length === 0) {
+            if (safeHistory.length === 0) {
                 tableBody.innerHTML = '';
                 emptyTip.style.display = 'block';
                 return;
             }
 
             emptyTip.style.display = 'none';
-            tableBody.innerHTML = history.map(item => `
-                <tr>
-                    <td><code>${item.id}</code></td>
-                    <td>${item.gameName}</td>
-                    <td>${item.adminName || '系统分配'}</td>
-                    <td>${item.timestamp}</td>
-                    <td><span class="status-badge status-success">${dict.statusProcessed}</span></td>
-                    <td>
-                        <button class="btn-action" onclick="deleteRecord('${item.id}')">${dict.btnDelete}</button>
-                    </td>
-                </tr>
-            `).join('');
+            tableBody.innerHTML = safeHistory.map(item => {
+                // 统一字段名读取并增加默认值
+                const id = item.id || '---';
+                const gameName = item.gameName || item.game || '未知游戏';
+                const adminName = item.adminName || item.admin || '系统分配';
+                const timestamp = item.timestamp || item.time || '未知时间';
+                const statusText = dict.statusProcessed || '已处理';
+
+                return `
+                    <tr>
+                        <td><code>${id}</code></td>
+                        <td>${gameName}</td>
+                        <td>${adminName}</td>
+                        <td>${timestamp}</td>
+                        <td><span class="status-badge status-success">${statusText}</span></td>
+                        <td>
+                            <button class="btn-action" onclick="deleteRecord('${id}')">${dict.btnDelete}</button>
+                        </td>
+                    </tr>
+                `;
+            }).join('');
         }
 
         function deleteRecord(id) {
