@@ -986,7 +986,7 @@
             document.getElementById('changePwdModal').style.display = 'none';
         }
 
-        function handleChangePwd() {
+        async function handleChangePwd() {
             const oldPwd = document.getElementById('oldPwd').value;
             const newPwd = document.getElementById('newPwd').value;
             const confirmNewPwd = document.getElementById('confirmNewPwd').value;
@@ -1010,19 +1010,29 @@
             }
 
             const currentUser = localStorage.getItem('currentAdmin');
-            const admins = JSON.parse(localStorage.getItem('gameAdmins')) || {};
-
-            if (admins[currentUser] !== oldPwd) {
-                alert(dict.pwdErrorOld);
-                return;
-            }
-
-            // 更新密码
-            admins[currentUser] = newPwd;
-            localStorage.setItem('gameAdmins', JSON.stringify(admins));
             
-            alert(dict.pwdSuccess);
-            handleLogout();
+            try {
+                const res = await fetch('/api/update-password', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        username: currentUser,
+                        oldPassword: oldPwd,
+                        newPassword: newPwd
+                    })
+                });
+
+                const data = await res.json();
+                if (res.ok) {
+                    alert(dict.pwdSuccess);
+                    handleLogout();
+                } else {
+                    alert(data.message || dict.pwdErrorOld);
+                }
+            } catch (err) {
+                console.error("修改密码失败:", err);
+                alert("连接服务器失败，请稍后重试");
+            }
         }
 
         async function handleGlobalClear() {
@@ -1061,7 +1071,7 @@
             }
         }
 
-        function saveSettings() {
+        async function saveSettings() {
             const settings = {
                 darkMode: document.getElementById('darkModeToggle').checked,
                 bgAnim: document.getElementById('bgAnimToggle').checked,
@@ -1073,6 +1083,24 @@
             };
 
             localStorage.setItem('gameCenterSettings', JSON.stringify(settings));
+
+            // 云端同步昵称和头像
+            const currentUser = localStorage.getItem('currentAdmin');
+            if (currentUser) {
+                try {
+                    await fetch('/api/update-profile', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            username: currentUser,
+                            nickname: settings.userName,
+                            avatar: settings.avatar
+                        })
+                    });
+                } catch (err) {
+                    console.error("云端同步失败:", err);
+                }
+            }
 
             const toast = document.getElementById('toast');
             const secondsSpan = document.getElementById('seconds');

@@ -516,6 +516,13 @@
                         localStorage.setItem('isAdminLoggedIn', 'true');
                         localStorage.setItem('currentAdmin', data.username);
                         localStorage.setItem('lastAdminUser', data.username);
+                        
+                        // 同步云端资料到本地设置
+                        const settings = JSON.parse(localStorage.getItem('gameCenterSettings')) || {};
+                        if (data.nickname) settings.userName = data.nickname;
+                        if (data.avatar) settings.avatar = data.avatar;
+                        localStorage.setItem('gameCenterSettings', JSON.stringify(settings));
+
                         setTimeout(() => {
                             window.location.href = 'index.html';
                         }, 1500);

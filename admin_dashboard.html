@@ -391,7 +391,7 @@
             <div class="section-header">
                 <div class="section-title">📝 全站申请记录 (实时)</div>
                 <div style="display: flex; gap: 10px;">
-                    <button class="btn-action" onclick="refreshData()">🔄 刷新数据</button>
+                    <button class="btn-action" onclick="syncFromCloud()">🔄 刷新数据</button>
                     <button class="btn-action" onclick="exportToCSV()" style="background: #2196F3;">📥 导出 CSV</button>
                 </div>
             </div>
@@ -837,8 +837,53 @@
             document.body.removeChild(link);
         }
 
-        // 初始化
-        applySettings();
+        // 同步云端数据到本地
+        async function syncFromCloud() {
+            const username = localStorage.getItem('currentAdmin') || localStorage.getItem('lastAdminUser');
+            if (!username) return;
+
+            const refreshBtn = document.querySelector('button[onclick="syncFromCloud()"]');
+            if (refreshBtn) refreshBtn.style.opacity = '0.5';
+
+            try {
+                const res = await fetch(`/api/records?username=${username}`);
+                if (res.ok) {
+                    const cloudRecords = await res.json();
+                    if (cloudRecords && Array.isArray(cloudRecords)) {
+                        // 合并数据：云端数据优先，去重
+                        let localHistory = JSON.parse(localStorage.getItem('userSubmissionHistory')) || [];
+                        const combinedMap = new Map();
+                        
+                        localHistory.forEach(item => {
+                            const key = item.id || item._id;
+                            if (key) combinedMap.set(key, item);
+                        });
+                        
+                        cloudRecords.forEach(item => {
+                            const key = item.id || item._id;
+                            if (key) combinedMap.set(key, item);
+                        });
+                        
+                        const finalHistory = Array.from(combinedMap.values())
+                            .sort((a, b) => new Date(b.time || b.timestamp) - new Date(a.time || a.timestamp));
+                        
+                        localStorage.setItem('userSubmissionHistory', JSON.stringify(finalHistory));
+                        applySettings(); // 重新渲染界面
+                        console.log("✅ 云端数据同步完成");
+                    }
+                }
+            } catch (err) {
+                console.error("❌ 同步云端失败:", err);
+            } finally {
+                if (refreshBtn) refreshBtn.style.opacity = '1';
+            }
+        }
+
+        // 初始化逻辑
+        (async () => {
+            applySettings();
+            await syncFromCloud(); // 页面加载时自动同步
+        })();
     </script>
 </body>
 </html>

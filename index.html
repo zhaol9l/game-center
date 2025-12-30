@@ -1361,13 +1361,18 @@
                 // 4. 保存到本地和云端 (确保用户名获取准确)
                 const username = localStorage.getItem('currentAdmin') || localStorage.getItem('lastAdminUser');
                 const auditNumber = 'USER-' + Math.floor(Math.random() * 10000).toString().padStart(4, '0');
+                
+                // 构造更完整的记录对象，匹配后端的 RecordSchema
                 const newRecord = {
                     id: auditNumber,
                     gameName: userData.gameName,
-                    platform: userData.platform,
-                    character: userData.character,
-                    timestamp: new Date().toLocaleString(),
-                    adminName: '用户提交'
+                    server: userData.platform, // 对应后端的 server 字段
+                    roleName: userData.gameName, // 后端需要角色名，暂时用游戏名填充
+                    roleId: userData.character,  // 对应后端的 roleId 字段
+                    status: '待处理',
+                    time: new Date().toISOString(), // 使用标准 ISO 时间
+                    adminName: '用户提交',
+                    timestamp: new Date().toLocaleString()
                 };
 
                 if (username) {

@@ -21,6 +21,8 @@ mongoose.connect(MONGO_URI, { useNewUrlParser: true, useUnifiedTopology: true })
 const AdminSchema = new mongoose.Schema({
     username: { type: String, unique: true, required: true },
     password: { type: String, required: true },
+    nickname: { type: String, default: "" },
+    avatar: { type: String, default: "" },
     createdAt: { type: Date, default: Date.now }
 });
 const Admin = mongoose.model('Admin', AdminSchema);
@@ -76,13 +78,63 @@ app.post('/api/login', async (req, res) => {
         const isMatch = await bcrypt.compare(password, user.password);
         if (!isMatch) return res.status(400).json({ message: "密码错误" });
         
-        res.json({ message: "登录成功", username: user.username });
+        res.json({ 
+            message: "登录成功", 
+            username: user.username,
+            nickname: user.nickname,
+            avatar: user.avatar
+        });
     } catch (err) {
         res.status(500).json({ message: "服务器错误" });
     }
 });
 
-// 6. 游戏记录相关接口
+// 6. 修改密码接口
+app.post('/api/update-password', async (req, res) => {
+    try {
+        const { username, oldPassword, newPassword } = req.body;
+        if (!username || !oldPassword || !newPassword) {
+            return res.status(400).json({ message: "缺少必要参数" });
+        }
+
+        const user = await Admin.findOne({ username });
+        if (!user) return res.status(400).json({ message: "用户不存在" });
+
+        // 验证旧密码
+        const isMatch = await bcrypt.compare(oldPassword, user.password);
+        if (!isMatch) return res.status(400).json({ message: "当前密钥错误" });
+
+        // 加密新密码
+        const hashedPassword = await bcrypt.hash(newPassword, 10);
+        user.password = hashedPassword;
+        await user.save();
+
+        res.json({ message: "密码修改成功" });
+    } catch (err) {
+        res.status(500).json({ message: "服务器错误" });
+    }
+});
+
+// 7. 个人资料接口
+app.post('/api/update-profile', async (req, res) => {
+    try {
+        const { username, nickname, avatar } = req.body;
+        if (!username) return res.status(400).json({ message: "未登录" });
+
+        const user = await Admin.findOne({ username });
+        if (!user) return res.status(400).json({ message: "用户不存在" });
+
+        if (nickname !== undefined) user.nickname = nickname;
+        if (avatar !== undefined) user.avatar = avatar;
+        
+        await user.save();
+        res.json({ message: "资料更新成功", nickname: user.nickname, avatar: user.avatar });
+    } catch (err) {
+        res.status(500).json({ message: "服务器错误" });
+    }
+});
+
+// 8. 游戏记录相关接口
 app.post('/api/records', async (req, res) => {
     try {
         const { username, records } = req.body;
