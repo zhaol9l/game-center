@@ -1478,27 +1478,11 @@
             resultsContainer.innerHTML = '';
 
             const i18nRes = {
-                zh: { id: "申请编号", name: "游戏名称", role: "角色名称", roleId: "角色ID", time: "提交时间", status: "申请情况", success: "申请成功", fail: "申请失败" },
-                en: { id: "Apply ID", name: "Game Name", role: "Role Name", roleId: "Role ID", time: "Submit Time", status: "Status", success: "Success", fail: "Failed" },
-                jp: { id: "申請番号", name: "ゲーム名", role: "キャラ名", roleId: "キャラID", time: "提出時間", status: "申請状況", success: "申請成功", fail: "申請失敗" }
+                zh: { id: "申请编号", name: "游戏名称", role: "角色名称", time: "提交时间", status: "申请情况", success: "申请成功", fail: "申请失败" },
+                en: { id: "Apply ID", name: "Game Name", role: "Role Name", time: "Submit Time", status: "Status", success: "Success", fail: "Failed" },
+                jp: { id: "申請番号", name: "ゲーム名", role: "キャラ名", time: "提出時間", status: "申請状況", success: "申請成功", fail: "申請失敗" }
             };
             const labels = i18nRes[lang] || i18nRes.zh;
-            const generatedIDs = new Set();
-
-            // 内部辅助函数：生成随机角色ID
-            function generateRandomRoleID() {
-                let roleID;
-                do {
-                    roleID = Math.floor(Math.random() * 1000000).toString().padStart(6, '0') + 
-                             (Math.floor(Math.random() * 100) + 1900).toString().substr(2) +
-                             (Math.floor(Math.random() * 12) + 1).toString().padStart(2, '0') +
-                             (Math.floor(Math.random() * 28) + 1).toString().padStart(2, '0') +
-                             Math.floor(Math.random() * 1000).toString().padStart(3, '0') +
-                             (Math.random() > 0.5 ? 'X' : Math.floor(Math.random() * 10));
-                } while (generatedIDs.has(roleID));
-                generatedIDs.add(roleID);
-                return roleID;
-            }
 
             // 1. 先渲染当前用户提交的结果 (放在最顶部)
             if (userData) {
@@ -1506,12 +1490,10 @@
                 item.className = 'result-item success';
                 item.style.animationDelay = '0s';
                 const auditNumber = currentAuditNumber || ('USER-' + Math.floor(Math.random() * 10000).toString().padStart(4, '0'));
-                const randomRoleID = generateRandomRoleID(); // 第一条也使用随机ID
                 item.innerHTML = `
                     <strong>${labels.id}:</strong> ${auditNumber} <br>
                     <strong>${labels.name}:</strong> ${userData.gameName} <br>
                     <strong>${labels.role}:</strong> ${userData.character} <br>
-                    <strong>${labels.roleId}:</strong> ${randomRoleID} <br>
                     <strong>${labels.time}:</strong> ${new Date().toLocaleString()} <br>
                     <strong>${labels.status}:</strong> ${labels.success}
                 `;
@@ -1536,8 +1518,6 @@
                     randomName += commonChineseChars.charAt(Math.floor(Math.random() * commonChineseChars.length));
                 }
                 
-                const roleID = generateRandomRoleID(); // 历史数据也使用随机ID
-                
                 const submitDate = new Date();
                 submitDate.setMinutes(submitDate.getMinutes() - Math.floor(Math.random() * 60));
                 const auditNumber = String.fromCharCode(65 + Math.floor(Math.random() * 26)) + 
@@ -1547,7 +1527,6 @@
                     <strong>${labels.id}:</strong> ${auditNumber} <br>
                     <strong>${labels.name}:</strong> ${gameNameInput} <br>
                     <strong>${labels.role}:</strong> ${randomName} <br>
-                    <strong>${labels.roleId}:</strong> ${roleID} <br>
                     <strong>${labels.time}:</strong> ${submitDate.toLocaleString()} <br>
                     <strong>${labels.status}:</strong> ${isSuccess ? labels.success : labels.fail}
                 `;
