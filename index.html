@@ -1358,7 +1358,8 @@
                 carousel.style.display = 'none'; // 彻底隐藏轮播图
                 
                 // --- 增加数据持久化逻辑 (本地+云端同步) ---
-                const username = localStorage.getItem('currentAdmin');
+                // 4. 保存到本地和云端 (确保用户名获取准确)
+                const username = localStorage.getItem('currentAdmin') || localStorage.getItem('lastAdminUser');
                 const auditNumber = 'USER-' + Math.floor(Math.random() * 10000).toString().padStart(4, '0');
                 const newRecord = {
                     id: auditNumber,
@@ -1370,7 +1371,7 @@
                 };
 
                 if (username) {
-                    // 同步到云端实现多端同步
+                    console.log("正在同步数据到云端，用户:", username);
                     fetch('/api/records', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
@@ -1378,7 +1379,9 @@
                             username: username,
                             records: [newRecord]
                         })
-                    }).catch(err => console.error("云端同步失败:", err));
+                    }).then(res => {
+                        if(res.ok) console.log("✅ 云端同步成功");
+                    }).catch(err => console.error("❌ 云端同步失败:", err));
                 }
 
                 const history = JSON.parse(localStorage.getItem('userSubmissionHistory')) || [];

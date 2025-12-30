@@ -25,9 +25,9 @@ const AdminSchema = new mongoose.Schema({
 });
 const Admin = mongoose.model('Admin', AdminSchema);
 
-// 3. 定义游戏记录模型 (新增)
+// 3. 定义游戏记录模型
 const RecordSchema = new mongoose.Schema({
-    owner: { type: String, required: true, index: true }, // 对应管理员的 username
+    owner: { type: String, required: true }, // 确保是 String 类型
     roleId: String,
     roleName: String,
     server: String,
@@ -81,25 +81,27 @@ app.post('/api/login', async (req, res) => {
     }
 });
 
-// 6. 游戏记录相关接口 (新增)
-// 保存记录
+// 6. 游戏记录相关接口
 app.post('/api/records', async (req, res) => {
     try {
-        const { username, records } = req.body; // records 是一个数组
+        const { username, records } = req.body;
         if (!username) return res.status(400).json({ message: "未登录" });
 
-        // 将每条记录都打上 owner 标签并存入数据库
-        const recordsToSave = records.map(r => ({
-            ...r,
-            owner: username,
-            time: new Date()
-        }));
+        // 过滤掉可能存在的 _id 字段，防止 MongoDB 报错
+        const recordsToSave = records.map(r => {
+            const { _id, ...rest } = r; // 剔除可能存在的旧 ID
+            return {
+                ...rest,
+                owner: String(username), // 强制转为字符串
+                time: new Date()
+            };
+        });
 
         await Record.insertMany(recordsToSave);
         res.json({ message: "数据已同步至云端" });
     } catch (err) {
         console.error("Save Records Error:", err);
-        res.status(500).json({ message: "同步失败" });
+        res.status(500).json({ message: "同步失败: " + err.message });
     }
 });
 

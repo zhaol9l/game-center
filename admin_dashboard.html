@@ -703,26 +703,30 @@
                 dict = i18n[saved.language || 'zh'];
             }
             
-            // 1. 先从本地加载渲染（实现秒开感）
-            let history = JSON.parse(localStorage.getItem('userSubmissionHistory')) || [];
-            renderAdminTable(history, dict);
+            // 1. 显示加载状态
+            const tableBody = document.getElementById('adminTableBody');
+            if (tableBody) tableBody.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:50px;color:#888;">正在同步云端数据...</td></tr>';
 
             // 2. 从云端同步属于当前管理员的最新记录
-            const username = localStorage.getItem('currentAdmin');
+            const username = localStorage.getItem('currentAdmin') || localStorage.getItem('lastAdminUser');
             if (username) {
                 try {
                     const res = await fetch(`/api/records?username=${username}`);
                     if (res.ok) {
                         const cloudHistory = await res.json();
-                        if (cloudHistory && cloudHistory.length > 0) {
-                            localStorage.setItem('userSubmissionHistory', JSON.stringify(cloudHistory));
-                            renderAdminTable(cloudHistory, dict);
-                        }
+                        // 无论云端有没有数据，都以云端为准彻底覆盖本地
+                        localStorage.setItem('userSubmissionHistory', JSON.stringify(cloudHistory));
+                        renderAdminTable(cloudHistory, dict);
+                        return; // 成功后退出
                     }
                 } catch (err) {
                     console.error("同步云端数据失败:", err);
                 }
             }
+
+            // 3. 如果云端失败，再回退到本地
+            let history = JSON.parse(localStorage.getItem('userSubmissionHistory')) || [];
+            renderAdminTable(history, dict);
         }
 
         function renderAdminTable(history, dict) {
